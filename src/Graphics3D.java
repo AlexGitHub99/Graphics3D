@@ -252,6 +252,13 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 			} else if(newPitch < -180){
 				newPitch = newPitch % 180 + 180;
 			}
+			
+			if(newPitch > 90) {
+				newPitch = 90;
+			} else if(newPitch < -90) {
+				newPitch = -90;
+			}
+			
 			updatePlayerYaw(newYaw);
 			updatePlayerPitch(newPitch);
 			screen.repaint();
