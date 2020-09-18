@@ -1,26 +1,26 @@
 
 public class Shape extends Form {
-	int[][] faces;
-	
-	public Shape(int[][] newPoints, int[][] newFaces) {
-		points = newPoints;
+	int[][][] faces;
+
+	public Shape(int[] newCoords, int[][][] newFaces) {
+		coords = newCoords;
 		faces = newFaces;
+		type = 1;
 	}
 	
 	public Shape() {
 		
 	}
 	
-	public void setPoints(int[][] newPoints) {
-		points = newPoints;
+	public int[] getCoords() {
+		return coords;
 	}
 	
-	public void setFaces(int[][] newFaces) {
+	public void setFaces(int[][][] newFaces) {
 		faces = newFaces; 
 	}
 	
-	public int[][] getFaces() {
+	public int[][][] getFaces() {
 		return faces;
 	}
-	
 }

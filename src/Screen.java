@@ -4,8 +4,8 @@ import java.util.ArrayList;
 
 import javax.swing.JPanel;
 
-
 public class Screen extends JPanel{
+	int SHAPE = 1;
 	int width;
 	int height;
 	double[] playerPos = new double[3];
@@ -20,11 +20,29 @@ public class Screen extends JPanel{
 		g.setColor(Color.white);
 		g.fillRect(0, 0, width, height);
 		g.setColor(Color.red);
-		paintGrid(g, 150);
+		paintGrid(g, 100);
 		g.setColor(Color.blue);
-		if(forms != null) {
-			for(int i = 0; i < forms.size(); i++) {
-				paintOutline(g, forms.get(i));
+//		if(forms != null) {
+//			for(int i = 0; i < forms.size(); i++) {
+//				paintOutline(g, forms.get(i));
+//			}
+//		}
+		
+		for(int f = 0; f < forms.size(); f++)  {
+			Form currentForm = forms.get(f);
+			if(currentForm.getType() == SHAPE) {
+				Shape currentShape = (Shape)currentForm;
+				int[][][] faces = currentShape.getFaces();
+				for(int s = 0; s < faces.length; s++) {
+					int[] xPoints = new int[faces[s].length];
+					int[] yPoints = new int[faces[s].length];
+					for(int p = 0; p < faces[s].length; p++) {
+						int[] xy = calcPoint(faces[s][p][0], faces[s][p][1], faces[s][p][2]);
+						xPoints[p] = xy[0];
+						yPoints[p] = xy[1];
+					}
+					g.fillPolygon(xPoints, yPoints, faces[s].length);
+				}
 			}
 		}
 	}
@@ -103,63 +121,14 @@ public class Screen extends JPanel{
 	private void paintGrid(Graphics g, int size) {
 		for(int i = 0; i < size; i++) {
 			for(int j = 0; j < size; j++) {
-				double dx = i*20 - playerPos[0];
-				double dy = 0 - playerPos[1];
-				double dz = j*20 - playerPos[2];
-				double yaw = Math.atan2(dz, dx)/Math.PI*180;
-				double pitch = Math.atan2(dy, Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2)))/Math.PI*180;
-				//Converts the angle difference between the point and the edge of the players FOV to 2D coordinates
-				double yawDif = (playerYaw - yaw);
-				double pitchDif = (playerPitch - pitch);
-				if(yawDif > 180) {
-					yawDif = yawDif - 360;
-				} else if(yawDif < -180) {
-					yawDif = yawDif + 360;
-				}
-				if(pitchDif > 180) {
-					pitchDif = pitchDif - 360;
-				} else if(pitchDif < -180) {
-					pitchDif = pitchDif + 360;
-				}
-		
-				int x2D = (int)((yawDif + FOV/2)/FOV*width); 
-				int z2D = (int)((pitchDif + FOV/2)/FOV*height);
 				g.setColor(Color.getHSBColor((float)(i + j)/(float)size, 1.0f, 1.0f));
-				drawPoint(g, i*20, 0, j*20, 5);
-
-
+				int[] xy = calcPoint(i*20, 0, j*20);
+				g.fillOval(xy[0], xy[1], 8, 8);
 			}
 		}
-		g.setColor(Color.green);
-		
-		double dx = 100 - playerPos[0];
-		double dy = 100 - playerPos[1];
-		double dz = 100 - playerPos[2];
-		double yaw = Math.atan2(dz, dx)/Math.PI*180;
-		double pitch = Math.atan2(dy, Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2)))/Math.PI*180;
-		//Converts the angle difference between the point and the edge of the players FOV to 2D coordinates
-		double yawDif = (playerYaw - yaw);
-		double pitchDif = (playerPitch - pitch);
-		if(yawDif > 180) {
-			yawDif = yawDif - 360;
-		} else if(yawDif < -180) {
-			yawDif = yawDif + 360;
-		}
-		if(pitchDif > 180) {
-			pitchDif = pitchDif - 360;
-		} else if(pitchDif < -180) {
-			pitchDif = pitchDif + 360;
-		}
-
-		int x2D = (int)((yawDif + FOV/2)/FOV*width); 
-		int z2D = (int)((pitchDif + FOV/2)/FOV*height);
-		g.fillOval(x2D, z2D, 5, 5);
-		
-		g.setColor(Color.orange);
-		drawPoint(g, 1000, 20, 1000, 5);
 	}
 	
-	private void drawPoint(Graphics g, int x, int y, int z, int size) {
+	private int[] calcPoint(int x, int y, int z) {
 		double px = x - playerPos[0];
 		double py = y - playerPos[1];
 		double pz = z - playerPos[2];
@@ -217,10 +186,10 @@ public class Screen extends JPanel{
 			xDifPixels *= -1;
 		}
 		
-		int x2D = (int)((xDifPixels + FOV/2)/FOV*width);
-		int y2D = (int)((yDifPixels + FOV/2)/FOV*height);
-		g.fillOval(x2D, y2D, size, size);
-//		g.drawLine(0, y2D, width, y2D);
+		int[] xy2D = new int[2];
+		xy2D[0] = (int)((xDifPixels + FOV/2)/FOV*width);
+		xy2D[1] = (int)((yDifPixels + FOV/2)/FOV*height);
+		return xy2D;
 	}
 	
 }

@@ -63,8 +63,10 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		updatePlayerPos();
 		updatePlayerYaw(45);
 		updatePlayerPitch(0);
-		forms.add(new Cube(100, 25, 100, 50)); //adds cube at x100, y0, z100 with size 50
-		forms.add(new Cube(100, 25, 300, 50)); //adds cube at x100, y0, z300 with size 50
+		int[][][] faces = { { {-50, -50 -50}, {50, -50, 50}, {-50, -50, 50}, },  { {-50}, {-50}, {50}, },  { {50}, {-50}, {50}, },  { {50}, {-50}, {-50}, },
+							{ {50}, {50}, {-50}, },  { {50}, {-50}, {50}, },  { {50}, {50}, {-50}, },  { {50}, {50}, {50}, },
+							{ {}, {}, {}, },  { {}, {}, {}, },  { {}, {}, {}, },  { {}, {}, {}, },  };
+		forms.add(new Shape);
 		screen.setForms(forms);
 		screen.repaint();
 //		for(int i = -180; i < 150; i++) {
