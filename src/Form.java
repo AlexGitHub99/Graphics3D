@@ -1,7 +1,7 @@
 
 public class Form {
 	
-	int[] coords;
+	int[] coords = new int[3];
 	int[][] points;
 	int type;
 	

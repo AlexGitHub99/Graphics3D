@@ -1,5 +1,7 @@
 import java.awt.AWTException;
 import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.Toolkit;
@@ -10,13 +12,15 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.event.MouseInputListener;
 
 public class Graphics3D implements KeyListener, MouseInputListener{
-	
 	Robot robot = null;
 	ArrayList<Form> forms = new ArrayList<Form>();
 	JFrame frame = new JFrame("Graphics");
+	JFrame info = new JFrame("Info");
+	ArrayList<JLabel> labels = new ArrayList<JLabel>();
 	int width = 1000;
 	int height = 1000;
 	Screen screen = new Screen(width, height);
@@ -35,6 +39,8 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 	boolean space = false;
 	int mouseX;
 	int mouseY;
+	int dMouseX = 0;
+	int dMouseY = 0;
 	boolean playing = true;
 	long lastTime = 0;
 	
@@ -45,6 +51,15 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		info.setSize(500, 500);
+		info.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		info.setLocation(width, 0);
+		info.setLayout(new GridLayout(10, 0));
+		//create all the labels to be displayed in the info window in an ArrayList and add them to the info window
+		addLabels(); 
+		
+		info.setVisible(true);
+		
 		frame.add(screen);
 		frame.setSize(width, height);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -63,10 +78,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		updatePlayerPos();
 		updatePlayerYaw(45);
 		updatePlayerPitch(0);
-		int[][][] faces = { { {-50, -50 -50}, {50, -50, 50}, {-50, -50, 50}, },  { {-50}, {-50}, {50}, },  { {50}, {-50}, {50}, },  { {50}, {-50}, {-50}, },
-							{ {50}, {50}, {-50}, },  { {50}, {-50}, {50}, },  { {50}, {50}, {-50}, },  { {50}, {50}, {50}, },
-							{ {}, {}, {}, },  { {}, {}, {}, },  { {}, {}, {}, },  { {}, {}, {}, },  };
-		forms.add(new Shape);
+		forms.add( new RectPrism(100, 100, 100, 50, 50, 500) );
 		screen.setForms(forms);
 		screen.repaint();
 //		for(int i = -180; i < 150; i++) {
@@ -102,54 +114,41 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 	public static void main(String[] args) {
 		new Graphics3D();
 	}
-
-	@Override
-	public void keyPressed(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_W) {
-			forward = true;
-		} else if(e.getKeyCode() == KeyEvent.VK_S) {
-			backward = true;
-		} else if(e.getKeyCode() == KeyEvent.VK_A) {
-			left = true;
-		} else if(e.getKeyCode() == KeyEvent.VK_D) {
-			right = true;
-		} else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-			space = true;
-		}
-	}
-
-	@Override
-	public void keyReleased(KeyEvent e) {
-		// TODO Auto-generated method stub
-		if(e.getKeyCode() == KeyEvent.VK_W) {
-			forward = false;
-		} else if(e.getKeyCode() == KeyEvent.VK_S) {
-			backward = false;
-		} else if(e.getKeyCode() == KeyEvent.VK_A) {
-			left = false;
-		} else if(e.getKeyCode() == KeyEvent.VK_D) {
-			right = false;
-		} else if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-			playing = !playing;
-		} else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-			space = false;
-		}
-	}
-
-	@Override
-	public void keyTyped(KeyEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
 	
 	public void start() {
 		lastTime = java.lang.System.currentTimeMillis();
-		while(true) {
+		while(playing == true) {
 			double time = (java.lang.System.currentTimeMillis() - lastTime)/1000.0;
 			lastTime = java.lang.System.currentTimeMillis();
 			
+			//process mouse input
+			int newYaw = playerYaw - dMouseX*sensitivity/100;
+			if(newYaw > 180) {
+				newYaw = newYaw % 180 - 180;
+			} else if(newYaw < -180) {
+				newYaw = newYaw % 180 + 180;
+			}
+			int newPitch = playerPitch - dMouseY*sensitivity/100;
+			if(newPitch > 180) {
+				newPitch = newPitch % 180 - 180;
+			} else if(newPitch < -180){
+				newPitch = newPitch % 180 + 180;
+			}
+			
+			if(newPitch > 90) {
+				newPitch = 90;
+			} else if(newPitch < -90) {
+				newPitch = -90;
+			}
+			
+			updatePlayerYaw(newYaw);
+			updatePlayerPitch(newPitch);
+			dMouseX = 0;
+			dMouseY = 0;
+			
+			//process keyboard input
 			if(space == true && playerPos[1] <= 0) {
-				velocity += 5;
+				velocity += 20;
 			}
 			
 			double pixelChange = speed*time*50;
@@ -190,7 +189,23 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 			}
 			
 			updatePlayerPos();
+			
+			//REPAINT screen and update info window
 			screen.repaint();
+			ArrayList<String> labelStrings = screen.getInfoLabels();
+			int i = 0;
+			if(labelStrings != null) {
+				for(i = 0; i < labelStrings.size(); i++) {
+					labels.get(i).setText(labelStrings.get(i));
+				}
+			}
+			labels.get(i).setText("Player X: " + Math.round(playerPos[0]));
+			labels.get(i + 1).setText("Player Y: " + Math.round(playerPos[1]));
+			labels.get(i + 2).setText("Player Z: " + Math.round(playerPos[2]));
+			labels.get(i + 3).setText("Player Yaw: " + Math.round(playerYaw));
+			labels.get(i + 4).setText("Player Pitch: " + Math.round(playerPitch));
+			labels.get(i + 5).setText("Player Verticle Vel: " + Math.round(velocity));
+			//delay
 			try {
 				Thread.sleep(20);
 			} catch (InterruptedException e) {
@@ -198,6 +213,61 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public void addLabels() {
+		ArrayList<String> labelStrings = screen.getInfoLabels();
+		if(labelStrings != null) {
+			for(int i = 0; i < labelStrings.size(); i++) {
+				labels.add(new JLabel(labelStrings.get(i)));
+				labels.get(i).setFont(new Font("Consolas", 0, 15));
+				info.add(labels.get(i));
+			}
+		}
+		for(int i = 0; i < 6; i++ ) { //iterations is the number of variables set in the main loop
+			labels.add(new JLabel());
+			labels.get(labels.size() - 1).setFont(new Font("Consolas", 0, 15));
+			info.add(labels.get(labels.size() - 1));
+		}
+	}
+	
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if(e.getKeyCode() == KeyEvent.VK_W) {
+			forward = true;
+		} else if(e.getKeyCode() == KeyEvent.VK_S) {
+			backward = true;
+		} else if(e.getKeyCode() == KeyEvent.VK_A) {
+			left = true;
+		} else if(e.getKeyCode() == KeyEvent.VK_D) {
+			right = true;
+		} else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+			space = true;
+		}
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+		if(e.getKeyCode() == KeyEvent.VK_W) {
+			forward = false;
+		} else if(e.getKeyCode() == KeyEvent.VK_S) {
+			backward = false;
+		} else if(e.getKeyCode() == KeyEvent.VK_A) {
+			left = false;
+		} else if(e.getKeyCode() == KeyEvent.VK_D) {
+			right = false;
+		} else if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			playing = !playing;
+		} else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+			space = false;
+		}
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
@@ -240,30 +310,9 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 	public void mouseMoved(MouseEvent e) {
 		// TODO Auto-generated method stub
 		if(playing == true) {
-			int dMouseX = e.getX() - mouseX;
-			int dMouseY = e.getY() - mouseY;
-			int newYaw = playerYaw - dMouseX*sensitivity/100;
-			if(newYaw > 180) {
-				newYaw = newYaw % 180 - 180;
-			} else if(newYaw < -180) {
-				newYaw = newYaw % 180 + 180;
-			}
-			int newPitch = playerPitch - dMouseY*sensitivity/100;
-			if(newPitch > 180) {
-				newPitch = newPitch % 180 - 180;
-			} else if(newPitch < -180){
-				newPitch = newPitch % 180 + 180;
-			}
+			dMouseX += e.getX() - mouseX;
+			dMouseY += e.getY() - mouseY;
 			
-			if(newPitch > 90) {
-				newPitch = 90;
-			} else if(newPitch < -90) {
-				newPitch = -90;
-			}
-			
-			updatePlayerYaw(newYaw);
-			updatePlayerPitch(newPitch);
-			screen.repaint();
 			robot.mouseMove(width/2, height/2);
 			mouseX = width/2;
 			mouseY = height/2;
