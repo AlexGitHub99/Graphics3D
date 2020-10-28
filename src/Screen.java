@@ -44,7 +44,7 @@ public class Screen extends JPanel{
 						int[] xPoints = new int[faces[s].length];
 						int[] yPoints = new int[faces[s].length];
 						for(int p = 0; p < faces[s].length; p++) {
-							int[] xy = calcPoint(faces[s][p][0] + coords[0], faces[s][p][1] + coords[1], faces[s][p][2] + coords[2]);
+							int[] xy = calcPoint(faces[s][p][0] + coords[0], faces[s][p][1] + coords[1], faces[s][p][2] + coords[2], true);
 							if(xy != null) {
 								xPoints[p] = xy[0];
 								yPoints[p] = xy[1];
@@ -82,6 +82,9 @@ public class Screen extends JPanel{
 		labels.add("a");
 		labels.add("absRotateAngle");
 		labels.add("yawDif");
+		labels.add("p2x");
+		labels.add("p2y");
+		labels.add("p2z");
 	}
 	
 	public double getPlayerYaw() {
@@ -157,7 +160,7 @@ public class Screen extends JPanel{
 				} else {
 					g.setColor(Color.getHSBColor((float)(i + j)/(float)size, 1.0f, 1.0f));
 				}
-				int[] xy = calcPoint(i*20, 0, j*20);
+				int[] xy = calcPoint(i*20, 0, j*20, false);
 				if(xy != null) {
 					g.fillOval(xy[0], xy[1], 8, 8);
 				}
@@ -165,7 +168,8 @@ public class Screen extends JPanel{
 		}
 	}
 	
-	private int[] calcPoint(int x, int y, int z) {
+	//retOffScreen specifies whether the function should give coordinates for points out of FOV for the purpose of drawing lines/shapes that go off screen
+	private int[] calcPoint(int x, int y, int z, boolean retOffScreen) {
 		//all pitch and yaw go from 180 (all the way left) to -180 (all the way right). Absolute yaw/pitch are relative to +X axis
 		//y is verticle direction
 		
@@ -210,9 +214,9 @@ public class Screen extends JPanel{
 		 *     Perpendicular Triangle:                  Rotation Triangle:
 		 *      ____                                    
 		 *     | a /                                    |\
-		 *     |  /									  a | \
+		 *   b |  /									  a | \
 		 *     | / pDistance							|  \
-		 *     |/                           			 \  \ b
+		 *     |/                           			 \  \ c
 		 * 												 a \ \	
 		 * 													 \\
 		 * 													   \
@@ -221,17 +225,124 @@ public class Screen extends JPanel{
 		
 		double absAngle = 2*Math.toDegrees(Math.asin(vpDistance/(2*pDistance)));
 		double a = Math.sin(Math.toRadians(absAngle))*pDistance;
+		double b = Math.cos(Math.toRadians(absAngle))*pDistance; //this will be used later
 		double refPointX = pDistance*Math.cos(Math.toRadians(playerPitch + absAngle))*Math.cos(Math.toRadians(playerYaw)); //+-
 	    double refPointY = pDistance*Math.sin(Math.toRadians(playerPitch + absAngle)); //+-
 	    double refPointZ = pDistance*Math.cos(Math.toRadians(playerPitch + absAngle))*Math.sin(Math.toRadians(playerYaw)); //+-
-	    double b = Math.sqrt(Math.pow(px - refPointX, 2) + Math.pow(py - refPointY, 2) + Math.pow(pz - refPointZ, 2)); //absolute distance
-	    double absRotateAngle = 2*Math.toDegrees(Math.asin(b/(2*a)));
+	    double c = Math.sqrt(Math.pow(px - refPointX, 2) + Math.pow(py - refPointY, 2) + Math.pow(pz - refPointZ, 2)); //absolute distance
+	    double absRotateAngle = 2*Math.toDegrees(Math.asin(c/(2*a)));
 	    if(yawDif < 0) { 
 	    	absRotateAngle *= -1;
 	    } //else it remains positive
 	    
-	    double x2D = Math.cos(Math.toRadians(90 + absRotateAngle))*absAngle/FOV*width;
-	    double y2D = Math.sin(Math.toRadians(90 + absRotateAngle))*absAngle/FOV*height;
+//	    double x2D = Math.cos(Math.toRadians(90 + absRotateAngle))*absAngle/FOV*width;
+//	    double y2D = Math.sin(Math.toRadians(90 + absRotateAngle))*absAngle/FOV*height;
+//	    double x2D = ((Math.cos(Math.toRadians(90 + absRotateAngle))*a)/b)*(width/2)/Math.tan(Math.toRadians(FOV/2));
+//	    double y2D = ((Math.sin(Math.toRadians(90 + absRotateAngle))*a)/b)*(width/2)/Math.tan(Math.toRadians(FOV/2));
+//	    if(absAngle > 90) { 
+//	    	if(retOffScreen == true) {
+//	    		absAngle = 89;
+//	    		
+//	    	} else {
+//	    		return null;
+//	    	}
+//	    }
+		
+	    //dead code
+//		double vpxz = Math.sqrt(Math.pow(px - vx, 2) + Math.pow(pz - vz, 2));
+//		double vpx = px - vx;
+//		double x1 = Math.cos( Math.toRadians( Math.toDegrees( Math.acos(vpx / vpxz) ) - playerYaw ) )  * vpxz;
+//		double xyAngle = Math.toDegrees(Math.atan(y / (x1) )) + playerPitch + 90;
+//		double xyDistance1 = Math.sqrt(Math.pow(x1, 2) + Math.pow(y, 2));
+//		double x2 = Math.cos(Math.toRadians(xyAngle))*xyDistance1; //actually 2d y
+//		double y2 = Math.sin(Math.toRadians(xyAngle))*xyDistance1;
+//		double xz2 = Math.sqrt(Math.pow(vpDistance, 2) - Math.pow(y2, 2));
+//		double z2 = Math.sin(Math.acos(x2/xz2))*xz2;//actually 2d x
+//		
+		//////NEW CODE
+	    
+	    //test values
+		double p2x = 0 - playerPos[0];
+		double p2y = 50 - playerPos[1];
+		double p2z = 0 - playerPos[2];
+		
+		////first step of translation: move coordinate plane to 0,0
+		p2x = p2x - vx;
+		p2y = p2y - vy;
+		p2z = p2z - vz;
+		
+		////second step of translation: rotate yaw of coordinate plane to face +z
+		double p2xz = Math.sqrt(Math.pow(p2x, 2) + Math.pow(p2z, 2)); //distance formula
+		double p2Yaw = Math.toDegrees(Math.atan(p2z/p2x));
+		if(p2x < 0) {
+			if(p2Yaw < 0) {
+				p2Yaw += 180;
+			} else {
+				p2Yaw -= 180;
+			}
+		}
+		if(Double.isNaN(p2Yaw)) {
+			if(p2z > 0) {
+				p2Yaw = 90;
+			} else {
+				p2Yaw = -90;
+			}
+		}
+		
+		double newYaw = p2Yaw - (playerYaw - 90);
+			
+		//Choose newYaw to the smaller angle if it represents the longer ( > 180) angle
+		if(newYaw > 180) {
+			newYaw = newYaw - 360;
+		} else if(newYaw < -180) {
+			newYaw = newYaw + 360;
+		}
+		
+		//update x and z to reflect new yaw
+		p2x = Math.cos(Math.toRadians(newYaw))*p2xz;
+		p2z = Math.sin(Math.toRadians(newYaw))*p2xz;
+		
+		////third step of translation: rotate pitch of coordinate plane to face +x
+		double tiltAngle = playerPitch + 90;
+		double p2zy = Math.sqrt(Math.pow(p2z, 2) + Math.pow(p2y, 2)); //distance formula
+		double p2Pitch = Math.toDegrees(Math.atan(p2y/p2z));
+		if(p2z < 0) {
+			if(p2Pitch < 0) {
+				p2Pitch += 180;
+			} else {
+				p2Pitch -= 180;
+			}
+		}
+		if(Double.isNaN(p2Pitch)) {
+			if(p2y > 0) {
+				p2Pitch = 90;
+			} else {
+				p2Pitch = -90;
+			}
+		}
+		
+		double newPitch = p2Pitch - tiltAngle;
+			
+		//Choose newPitch to the smaller angle if it represents the longer ( > 180) angle
+		if(newPitch > 180) {
+			newPitch = newPitch - 360;
+		} else if(newPitch < -180) {
+			newPitch = newPitch + 360;
+		}
+		
+		//update z and y to reflect new pitch
+		p2z = Math.cos(Math.toRadians(newPitch))*p2zy;
+		p2y = Math.sin(Math.toRadians(newPitch))*p2zy - (pDistance - b); 
+		//(pDistance - b) is the height difference between the view plane and screen plane
+		//the x/z coordinates do not need to be adjusted because they're the same for both
+		double virtualDistance = (width/2)/Math.tan(Math.toRadians(FOV/2));
+		p2x = (virtualDistance/b)*p2x;
+		p2y = (virtualDistance/b)*p2y;
+		p2z = (virtualDistance/b)*p2z;
+		
+		//virtualDistance = distance to virtual screen based on width and FOV
+	    double x2D = Math.cos(Math.toRadians(90 + absRotateAngle))*Math.tan(Math.toRadians(absAngle))*virtualDistance;    
+	    double y2D = Math.sin(Math.toRadians(90 + absRotateAngle))*Math.tan(Math.toRadians(absAngle))*virtualDistance;
 		if(x == 0 && y == 0 && z == 0) {
 			labels.set(1, "vpDistance: " + Math.round(vpDistance));
 			labels.set(2, "vx: " + Math.round(vx));
@@ -245,6 +356,10 @@ public class Screen extends JPanel{
 			labels.set(10, "a: " + a);
 			labels.set(11, "absRotateAngle: " + absRotateAngle);
 			labels.set(12,  "yawDif: " + yawDif);
+			labels.set(13, "p2x: " + p2x);
+			labels.set(14, "p2y: " + p2y);
+			labels.set(15, "p2z: " + p2z);
+			
 		}
 		
 		int[] xy2D = new int[2];

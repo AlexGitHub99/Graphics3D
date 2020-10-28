@@ -71,7 +71,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		screen.setCursor(blankCursor);
 		
 		screen.setPlayerHeight(playerHeight);
-		screen.setFOV(150);
+		screen.setFOV(110);
 		playerPos[0] = 0;
 		playerPos[1] = 0;
 		playerPos[2] = 0;
@@ -117,100 +117,105 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 	
 	public void start() {
 		lastTime = java.lang.System.currentTimeMillis();
-		while(playing == true) {
-			double time = (java.lang.System.currentTimeMillis() - lastTime)/1000.0;
-			lastTime = java.lang.System.currentTimeMillis();
-			
-			//process mouse input
-			int newYaw = playerYaw - dMouseX*sensitivity/100;
-			if(newYaw > 180) {
-				newYaw = newYaw % 180 - 180;
-			} else if(newYaw < -180) {
-				newYaw = newYaw % 180 + 180;
-			}
-			int newPitch = playerPitch - dMouseY*sensitivity/100;
-			if(newPitch > 180) {
-				newPitch = newPitch % 180 - 180;
-			} else if(newPitch < -180){
-				newPitch = newPitch % 180 + 180;
-			}
-			
-			if(newPitch > 90) {
-				newPitch = 90;
-			} else if(newPitch < -90) {
-				newPitch = -90;
-			}
-			
-			updatePlayerYaw(newYaw);
-			updatePlayerPitch(newPitch);
-			dMouseX = 0;
-			dMouseY = 0;
-			
-			//process keyboard input
-			if(space == true && playerPos[1] <= 0) {
-				velocity += 20;
-			}
-			
-			double pixelChange = speed*time*50;
-			if(forward == true && left == true) {
-				playerPos[0] += (Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw + 90))*pixelChange)/2;
-				playerPos[2] += (Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw + 90))*pixelChange)/2;
-			} else if(forward == true && right == true) {
-				playerPos[0] += (Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw - 90))*pixelChange)/2;
-				playerPos[2] += (Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw - 90))*pixelChange)/2;
-			} else if(backward == true && left == true) {
-				playerPos[0] += (-Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw + 90))*pixelChange)/2;
-				playerPos[2] += (-Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw + 90))*pixelChange)/2;
-			} else if(backward == true && right == true) {
-				playerPos[0] += (-Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw - 90))*pixelChange)/2;
-				playerPos[2] += (-Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw - 90))*pixelChange)/2;
-			} else if(forward == true) {
-				playerPos[0] += Math.cos(Math.toRadians(playerYaw))*pixelChange;
-				playerPos[2] += Math.sin(Math.toRadians(playerYaw))*pixelChange;
-			} else if(backward == true) {
-				playerPos[0] += -Math.cos(Math.toRadians(playerYaw))*pixelChange;
-				playerPos[2] += -Math.sin(Math.toRadians(playerYaw))*pixelChange;
-			} else if(left == true) {
-				playerPos[0] += Math.cos(Math.toRadians(playerYaw + 90))*pixelChange;
-				playerPos[2] += Math.sin(Math.toRadians(playerYaw + 90))*pixelChange;
-			} else if(right == true) {
-				playerPos[0] += Math.cos(Math.toRadians(playerYaw - 90))*pixelChange;
-				playerPos[2] += Math.sin(Math.toRadians(playerYaw - 90))*pixelChange;
-			}
-			
-			if(playerPos[1] > 0 || velocity != 0) {
-				double distance = 0.5*g*Math.pow(time, 2) + velocity*time; //d = 0.5*a*t^2 + u*t
-				velocity += g*time; //v = at
-				playerPos[1] += distance*50; //50 pixels per meter
-			}
-			if(playerPos[1] <= 0) {
-				playerPos[1] = 0;
-				velocity = 0;
-			}
-			
-			updatePlayerPos();
-			
-			//REPAINT screen and update info window
-			screen.repaint();
-			ArrayList<String> labelStrings = screen.getInfoLabels();
-			int i = 0;
-			if(labelStrings != null) {
-				for(i = 0; i < labelStrings.size(); i++) {
-					labels.get(i).setText(labelStrings.get(i));
+		while(true) {
+			//this line should do absolutely nothing but for some reason it makes the program work after escaping in and out
+//			System.out.println("while true");
+			if(playing == true) {
+				System.out.println("Playing true");
+				double time = (java.lang.System.currentTimeMillis() - lastTime)/1000.0;
+				lastTime = java.lang.System.currentTimeMillis();
+				
+				//process mouse input
+				int newYaw = playerYaw - dMouseX*sensitivity/100;
+				if(newYaw > 180) {
+					newYaw = newYaw % 180 - 180;
+				} else if(newYaw < -180) {
+					newYaw = newYaw % 180 + 180;
 				}
-			}
-			labels.get(i).setText("Player X: " + Math.round(playerPos[0]));
-			labels.get(i + 1).setText("Player Y: " + Math.round(playerPos[1]));
-			labels.get(i + 2).setText("Player Z: " + Math.round(playerPos[2]));
-			labels.get(i + 3).setText("Player Yaw: " + Math.round(playerYaw));
-			labels.get(i + 4).setText("Player Pitch: " + Math.round(playerPitch));
-			labels.get(i + 5).setText("Player Verticle Vel: " + Math.round(velocity));
-			//delay
-			try {
-				Thread.sleep(20);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				int newPitch = playerPitch - dMouseY*sensitivity/100;
+				if(newPitch > 180) {
+					newPitch = newPitch % 180 - 180;
+				} else if(newPitch < -180){
+					newPitch = newPitch % 180 + 180;
+				}
+				
+				if(newPitch > 90) {
+					newPitch = 90;
+				} else if(newPitch < -90) {
+					newPitch = -90;
+				}
+				
+				updatePlayerYaw(newYaw);
+				updatePlayerPitch(newPitch);
+				dMouseX = 0;
+				dMouseY = 0;
+				
+				//process keyboard input
+				if(space == true && playerPos[1] <= 0) {
+					velocity += 20;
+				}
+				
+				double pixelChange = speed*time*50;
+				if(forward == true && left == true) {
+					playerPos[0] += (Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw + 90))*pixelChange)/2;
+					playerPos[2] += (Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw + 90))*pixelChange)/2;
+				} else if(forward == true && right == true) {
+					playerPos[0] += (Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw - 90))*pixelChange)/2;
+					playerPos[2] += (Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw - 90))*pixelChange)/2;
+				} else if(backward == true && left == true) {
+					playerPos[0] += (-Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw + 90))*pixelChange)/2;
+					playerPos[2] += (-Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw + 90))*pixelChange)/2;
+				} else if(backward == true && right == true) {
+					playerPos[0] += (-Math.cos(Math.toRadians(playerYaw))*pixelChange + Math.cos(Math.toRadians(playerYaw - 90))*pixelChange)/2;
+					playerPos[2] += (-Math.sin(Math.toRadians(playerYaw))*pixelChange + Math.sin(Math.toRadians(playerYaw - 90))*pixelChange)/2;
+				} else if(forward == true) {
+					playerPos[0] += Math.cos(Math.toRadians(playerYaw))*pixelChange;
+					playerPos[2] += Math.sin(Math.toRadians(playerYaw))*pixelChange;
+				} else if(backward == true) {
+					playerPos[0] += -Math.cos(Math.toRadians(playerYaw))*pixelChange;
+					playerPos[2] += -Math.sin(Math.toRadians(playerYaw))*pixelChange;
+				} else if(left == true) {
+					playerPos[0] += Math.cos(Math.toRadians(playerYaw + 90))*pixelChange;
+					playerPos[2] += Math.sin(Math.toRadians(playerYaw + 90))*pixelChange;
+				} else if(right == true) {
+					playerPos[0] += Math.cos(Math.toRadians(playerYaw - 90))*pixelChange;
+					playerPos[2] += Math.sin(Math.toRadians(playerYaw - 90))*pixelChange;
+				}
+				
+				if(playerPos[1] > 0 || velocity != 0) {
+					double distance = 0.5*g*Math.pow(time, 2) + velocity*time; //d = 0.5*a*t^2 + u*t
+					velocity += g*time; //v = at
+					playerPos[1] += distance*50; //50 pixels per meter
+				}
+				if(playerPos[1] <= 0) {
+					playerPos[1] = 0;
+					velocity = 0;
+				}
+				
+				updatePlayerPos();
+				
+				//REPAINT screen and update info window
+				screen.repaint();
+				ArrayList<String> labelStrings = screen.getInfoLabels();
+				int i = 0;
+				if(labelStrings != null) {
+					for(i = 0; i < labelStrings.size(); i++) {
+						labels.get(i).setText(labelStrings.get(i));
+					}
+				}
+				labels.get(i).setText("Player X: " + Math.round(playerPos[0]));
+				labels.get(i + 1).setText("Player Y: " + Math.round(playerPos[1]));
+				labels.get(i + 2).setText("Player Z: " + Math.round(playerPos[2]));
+				labels.get(i + 3).setText("Player Yaw: " + Math.round(playerYaw));
+				labels.get(i + 4).setText("Player Pitch: " + Math.round(playerPitch));
+				labels.get(i + 5).setText("Player Verticle Vel: " + Math.round(velocity));
+				//delay
+				try {
+					Thread.sleep(20);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}
@@ -259,6 +264,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 			right = false;
 		} else if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			playing = !playing;
+			System.out.println(playing);
 		} else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			space = false;
 		}
