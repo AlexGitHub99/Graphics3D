@@ -61,7 +61,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		info.setVisible(true);
 		
 		frame.add(screen);
-		frame.setSize(width, height);
+		frame.setSize(width + 50, height + 50);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.addKeyListener(this);
 		frame.addMouseMotionListener(this);
@@ -72,13 +72,20 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		
 		screen.setPlayerHeight(playerHeight);
 		screen.setFOV(110);
-		playerPos[0] = 0;
+		playerPos[0] = 429;
 		playerPos[1] = 0;
-		playerPos[2] = 0;
+		playerPos[2] = 232;
 		updatePlayerPos();
-		updatePlayerYaw(45);
-		updatePlayerPitch(0);
-		forms.add( new RectPrism(100, 100, 100, 50, 50, 500) );
+		updatePlayerYaw(84);
+		updatePlayerPitch(-3);
+//		playerPos[0] = 0;
+//		playerPos[1] = 0;
+//		playerPos[2] = 0;
+//		updatePlayerPos();
+//		updatePlayerYaw(45);
+//		updatePlayerPitch(0);
+//		forms.add( new RectPrism(100, 100, 100, 50, 50, 500) );
+		forms.add( new Plane(500, 100, 1000, 300, -800));
 		screen.setForms(forms);
 		screen.repaint();
 //		for(int i = -180; i < 150; i++) {
@@ -117,11 +124,15 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 	
 	public void start() {
 		lastTime = java.lang.System.currentTimeMillis();
+//		while(true) {
+//			if(playing == true) {
+//				System.out.println("playing true");
+//			}
+//		}
 		while(true) {
 			//this line should do absolutely nothing but for some reason it makes the program work after escaping in and out
-//			System.out.println("while true");
+//			System.out.println("random print");
 			if(playing == true) {
-				System.out.println("Playing true");
 				double time = (java.lang.System.currentTimeMillis() - lastTime)/1000.0;
 				lastTime = java.lang.System.currentTimeMillis();
 				
@@ -211,7 +222,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 				labels.get(i + 5).setText("Player Verticle Vel: " + Math.round(velocity));
 				//delay
 				try {
-					Thread.sleep(20);
+					Thread.sleep(2);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
