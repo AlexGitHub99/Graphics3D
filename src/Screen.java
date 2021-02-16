@@ -118,9 +118,14 @@ public class Screen extends JPanel{
 		int[] xyzSecondOut = null;
 		int p = 0;
 		int startedAt = -1;
+		boolean dontBreak = false;
 		while(true) { //connected points are next to each other in array
 			if(p == startedAt) {
-				break;
+				if(dontBreak == true) {
+					dontBreak = false;
+				} else {
+					break;
+				}
 			}
 			System.out.println("New point, p = " + p);
 			//3D points
@@ -161,7 +166,7 @@ public class Screen extends JPanel{
 						xyzSecondOut = null; //reset just in case
 					} else { //current point is off screen
 						
-						int[][] intersepts = calcLine(x, y, z, face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]);
+						int[][] intersepts = calcLine(x, y, z, face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]);//calcline between current point and next point
 						if(intersepts != null) {
 							if(startedAt != -1) {
 								int[] xyEnter = intersepts[0];
@@ -169,25 +174,25 @@ public class Screen extends JPanel{
 								addCorners(points, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
+								dontBreak = true;
 							}
-							//reset
-							exitArrayNumber = -1;
-							xyzFirstOut = null;
 							
 							//add next intercept
 							points.add(intersepts[1]);
 							exitArrayNumber = points.size() - 1;
+							
 							xyzFirstOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 							xyzSecondOut = null; //reset just in case
+							
 						} else {
 							if(xyzSecondOut == null) { //if xyzSecondOut is null then the current point must be the first consecutive point outside the screen
-								xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][1] + coords[1]};
+								xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 							}
 						}
 					}
 				} else {
 					if(xyzSecondOut == null) { //if xyzSecondOut is null then the current point must be the first consecutive point outside the screen
-						xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][1] + coords[1]};
+						xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 					}
 				}
 			} else if(xyNextP[0] < 0 || xyNextP[0] > width || xyNextP[1] < 0 || xyNextP[1] > height) { //next point is off screen
@@ -210,23 +215,23 @@ public class Screen extends JPanel{
 								addCorners(points, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
+								dontBreak = true;
+								//add next intercept
+								
 							}
-							//reset
-							exitArrayNumber = -1;
-							xyzFirstOut = null;
 							
+							points.add(intersects2D[1]);
+							exitArrayNumber = points.size() - 1;
+							
+							xyzFirstOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
+							xyzSecondOut = null; //reset just in case
 							//add point between intercepts
 //							int[] xyBetween = {intersects2D[1][0] - intersects2D[0][0], intersects2D[1][1] - intersects2D[0][1]}; //subtracts x and y difference to find middle point of line
 //							points.add(xyBetween);
 							
-							//add next intercept
-							points.add(intersects2D[1]);
-							exitArrayNumber = points.size() - 1;
-							xyzFirstOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
-							xyzSecondOut = null; //reset just in case
 						} else {
 							if(xyzSecondOut == null) { //if xyzSecondOut is null then the current point must be the first consecutive point outside the screen
-								xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][1] + coords[1]};
+								xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 							}
 						}
 					}
@@ -240,10 +245,8 @@ public class Screen extends JPanel{
 							addCorners(points, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 						} else {
 							startedAt = nextP;
+							dontBreak = true;
 						}
-						//reset
-						exitArrayNumber = -1;
-						xyzFirstOut = null;
 						
 						//add next intercept
 						points.add(intersepts[0]);
@@ -252,7 +255,7 @@ public class Screen extends JPanel{
 						xyzSecondOut = null; //reset just in case
 					} else {
 						if(xyzSecondOut == null) { //if xyzSecondOut is null then the current point must be the first consecutive point outside the screen
-							xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][1] + coords[1]};
+							xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 						}
 					}
 				}
@@ -289,9 +292,6 @@ public class Screen extends JPanel{
 				}
 				p = 0;
 			}
-			if(p == startedAt) {
-				break;
-			}
 		}
 		int[] xPointsArray = new int[points.size()];
 		int[] yPointsArray = new int[points.size()];
@@ -302,6 +302,7 @@ public class Screen extends JPanel{
 			yPointsArray[i] = points.get(i)[1];
 			g.setColor(Color.red);
 			g.fillOval(points.get(i)[0], points.get(i)[1], 5, 5);
+			g.drawString(i + "", points.get(i)[0], points.get(i)[1]);
 		}
 		g.setColor(Color.blue);
 		g.drawPolygon(xPointsArray, yPointsArray, xPointsArray.length);
@@ -428,6 +429,7 @@ public class Screen extends JPanel{
 		
 		int difference = intersect2PerimeterDistance - intersect1PerimeterDistance;
 		//reduce difference to shortest distance if needed
+
 		if(difference > width + height) {
 			difference = difference - 2*(width + height);
 		} else if(difference < -(width + height)) {
