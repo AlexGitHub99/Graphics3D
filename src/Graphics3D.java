@@ -76,8 +76,8 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		playerPos[1] = 0;
 		playerPos[2] = 624;
 		updatePlayerPos();
-		updatePlayerYaw(178);
-		updatePlayerPitch(-1);
+		updatePlayerYaw(172);
+		updatePlayerPitch(0);
 //		playerPos[0] = 0;
 //		playerPos[1] = 0;
 //		playerPos[2] = 0;
