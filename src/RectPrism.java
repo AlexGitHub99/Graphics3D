@@ -15,37 +15,45 @@ public class RectPrism extends Form {
 		int xr = dimensions[0]/2;
 		int yr = dimensions[1]/2;
 		int zr = dimensions[2]/2;
-		faces = new int[12][3][3];
-		for(int i = 0; i < 3; i += 2) {
-			int mult = 1;
-			if(i == 2) {
-				mult = -1;
-			}
-			int[][] face = { {xr*mult, yr, zr}, {xr*mult, -yr, zr}, {xr*mult, -yr, -zr} };
-			faces[i] = face;
-			int[][] face2 = { {xr*mult, yr, zr}, {xr*mult, yr, -zr}, {xr*mult, -yr, -zr} };
-			faces[i + 1] = face2;
-		}
-		for(int i = 4; i < 7; i += 2) {
-			int mult = 1;
-			if(i == 6) {
-				mult = -1;
-			}
-			int[][] face = { {xr, yr*mult, zr}, {-xr, yr*mult, zr}, {-xr, yr*mult, -zr} };
-			faces[i] = face;
-			int[][] face2 = { {xr, yr*mult, zr}, {xr, yr*mult, -zr}, {-xr, yr*mult, -zr} };
-			faces[i + 1] = face2;
-		}
-		for(int i = 8; i < 11; i += 2) {
-			int mult = 1;
-			if(i == 10) {
-				mult = -1;
-			}
-			int[][] face = { {xr, yr, zr*mult}, {-xr, yr, zr*mult}, {-xr, -yr, zr*mult} };
-			faces[i] = face;
-			int[][] face2 = { {xr, yr, zr*mult}, {xr, -yr, zr*mult}, {-xr, -yr, zr*mult} };
-			faces[i + 1] = face2;
-		}
+//		faces = new int[12][3][3];
+		faces = new int[6][4][3];
+		faces[0] = new int[][] { {-xr, yr, -zr}, {xr, yr, -zr}, {xr, -yr, -zr}, {-xr, -yr, -zr} };
+		faces[1] = new int[][] { {xr, yr, -zr}, {xr, yr, zr}, {xr, -yr, zr}, {xr, -yr, -zr} };
+		faces[2] = new int[][] { {-xr, yr, zr}, {xr, yr, zr}, {xr, -yr, zr}, {-xr, -yr, zr} };
+		faces[3] = new int[][] { {-xr, yr, -zr}, {-xr, yr, zr}, {-xr, -yr, zr}, {-xr, -yr, -zr} };
+		faces[4] = new int[][] { {-xr, yr, zr}, {xr, yr, zr}, {xr, yr, -zr}, {-xr, yr, -zr} };
+		faces[5] = new int[][] { {-xr, -yr, zr}, {xr, -yr, zr}, {xr, -yr, -zr}, {-xr, -yr, -zr} };
+		
+//		for(int i = 0; i < 3; i += 2) {
+//			int mult = 1;
+//			if(i == 2) {
+//				mult = -1;
+//			}
+//			int[][] face = { {xr*mult, yr, zr}, {xr*mult, -yr, zr}, {xr*mult, -yr, -zr} };
+//			faces[i] = face;
+//			int[][] face2 = { {xr*mult, yr, zr}, {xr*mult, yr, -zr}, {xr*mult, -yr, -zr} };
+//			faces[i + 1] = face2;
+//		}
+//		for(int i = 4; i < 7; i += 2) {
+//			int mult = 1;
+//			if(i == 6) {
+//				mult = -1;
+//			}
+//			int[][] face = { {xr, yr*mult, zr}, {-xr, yr*mult, zr}, {-xr, yr*mult, -zr} };
+//			faces[i] = face;
+//			int[][] face2 = { {xr, yr*mult, zr}, {xr, yr*mult, -zr}, {-xr, yr*mult, -zr} };
+//			faces[i + 1] = face2;
+//		}
+//		for(int i = 8; i < 11; i += 2) {
+//			int mult = 1;
+//			if(i == 10) {
+//				mult = -1;
+//			}
+//			int[][] face = { {xr, yr, zr*mult}, {-xr, yr, zr*mult}, {-xr, -yr, zr*mult} };
+//			faces[i] = face;
+//			int[][] face2 = { {xr, yr, zr*mult}, {xr, -yr, zr*mult}, {-xr, -yr, zr*mult} };
+//			faces[i + 1] = face2;
+//		}
 	}
 	
 	public int getType() {

@@ -39,12 +39,12 @@ public class Screen extends JPanel{
 					RectPrism currentPrism = (RectPrism)currentForm;
 					int[][][] faces = currentPrism.getFaces();
 					for(int s = 0; s < faces.length; s++) {
-						paintFace(g, currentPrism.getCoords(), faces[s]);
+						paintFace(g, currentPrism.getCoords(), faces[s], false);
 					}
 				} else if(currentForm.getType() == PLANE) {
 					Plane currentPlane = (Plane)currentForm;
 					int[][] face = currentPlane.getFace();
-					paintFace(g, currentPlane.getCoords(), face);
+					paintFace(g, currentPlane.getCoords(), face, true);
 				}
 			}
 		}
@@ -111,7 +111,7 @@ public class Screen extends JPanel{
 		playerPitch = newPitch;
 	}
 	
-	private void paintFace(Graphics g, int[] coords, int[][] face) {
+	private void paintFace(Graphics g, int[] coords, int[][] face, boolean fill) {
 		ArrayList<int[]> points = new ArrayList<int[]>();
 		int exitArrayNumber = -1;
 		int[] xyzFirstOut = null;
@@ -120,6 +120,18 @@ public class Screen extends JPanel{
 		int startedAt = -1;
 		boolean dontBreak = false;
 		int[] lastOut = null;
+		//centerPoint is the middle of the face and is used for adding corners
+		int[] xyzCenterPoint = new int[3];
+		for(int i = 0; i < face.length; i++) {
+			xyzCenterPoint[0] += face[i][0];
+			xyzCenterPoint[1] += face[i][1];
+			xyzCenterPoint[2] += face[i][2];
+		}
+		xyzCenterPoint[0] = xyzCenterPoint[0]/face.length + coords[0];
+		xyzCenterPoint[1] = xyzCenterPoint[1]/face.length + coords[1];
+		xyzCenterPoint[2] = xyzCenterPoint[2]/face.length + coords[2];
+		
+		int[] xyzOnScreen = null;
 		while(true) { //connected points are next to each other in array
 			if(p == startedAt) {
 				if(dontBreak == true) {
@@ -164,20 +176,29 @@ public class Screen extends JPanel{
 							startedAt = p;
 						}
 						points.add(xy);
-						points.add(calcLine(x, y, z, face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2])[0]);
+						points.add(calcLine(x, y, z, face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2], false)[0]);
 						exitArrayNumber = points.size() - 1;
 						xyzFirstOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 						xyzSecondOut = null; //reset just in case
 						lastOut = new int[] {x, y, z};
 					} else { //current point is off screen
 						
-						int[][] intersepts = calcLine(x, y, z, face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]);//calcline between current point and next point
+						int[][] intersepts = calcLine(x, y, z, face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2], true);//calcline between current point and next point
 						if(intersepts != null) {
 							if(startedAt != -1) {
 								int[] xyEnter = intersepts[0];
 								points.add(xyEnter); //add first intercept
 								lastOut = new int[] {x, y, z};
-								addCorners(points, lastOut, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+								int[] xyzOffScreen = null;
+								int[] xyCenterPoint = calcPoint(xyzCenterPoint[0], xyzCenterPoint[1], xyzCenterPoint[2]);
+								if(xyCenterPoint == null || xyCenterPoint[0] < 0 || xyCenterPoint[0] > width || xyCenterPoint[1] < 0 || xyCenterPoint[1] > height) { //center point is off screen
+									xyzOnScreen = intersepts[2]; //middle point
+									xyzOffScreen = xyzCenterPoint;
+								} else {
+									xyzOnScreen = xyzCenterPoint;
+									xyzOffScreen = new int[] {x, y, z};
+								}
+								addCorners(points, xyzOffScreen, intersepts[2], xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
 								dontBreak = true;
@@ -208,21 +229,29 @@ public class Screen extends JPanel{
 							startedAt = p;
 						}
 						points.add(xy);
-						points.add(calcLine(x, y, z, xNext, yNext, zNext)[0]);
-//						points.add(calc2DIntersect(xy, xyNextP)[0]);
+						points.add(calcLine(x, y, z, xNext, yNext, zNext, false)[0]);
 						exitArrayNumber = points.size() - 1;
 						xyzFirstOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 						xyzSecondOut = null; //reset just in case
 						lastOut = new int[] {x, y, z};
+						xyzOnScreen = new int[] {x, y, z};
 					} else { //current point is off screen
-						int[][] intersects2D = calcLine(x, y, z, xNext, yNext, zNext);
-//						int[][] intersects2D = calc2DIntersect(xy, xyNextP);
-						if(intersects2D != null) {
+						int[][] intersepts = calcLine(x, y, z, xNext, yNext, zNext, true);
+						if(intersepts != null) {
 							if(startedAt != -1) {
-								int[] xyEnter = intersects2D[0];
+								int[] xyEnter = intersepts[0];
 								points.add(xyEnter); //add first intercept
 								lastOut = new int[] {x, y, z};
-								addCorners(points, lastOut, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+								int[] xyzOffScreen = null;
+								int[] xyCenterPoint = calcPoint(xyzCenterPoint[0], xyzCenterPoint[1], xyzCenterPoint[2]);
+								if(xyCenterPoint == null || xyCenterPoint[0] < 0 || xyCenterPoint[0] > width || xyCenterPoint[1] < 0 || xyCenterPoint[1] > height) { //center point is off screen
+									xyzOnScreen = intersepts[2]; //middle point
+									xyzOffScreen = xyzCenterPoint;
+								} else {
+									xyzOnScreen = xyzCenterPoint;
+									xyzOffScreen = new int[] {x, y, z};
+								}
+								addCorners(points, xyzOffScreen, intersepts[2], xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
 								dontBreak = true;
@@ -230,7 +259,7 @@ public class Screen extends JPanel{
 								
 							}
 							
-							points.add(intersects2D[1]);
+							points.add(intersepts[1]);
 							exitArrayNumber = points.size() - 1;
 							
 							xyzFirstOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
@@ -247,13 +276,22 @@ public class Screen extends JPanel{
 					}
 				} else { //current point is behind you
 					
-					int[][] intersepts = calcLine(face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2], x, y, z);
+					int[][] intersepts = calcLine(face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2], x, y, z, true);
 					if(intersepts != null) {
 						if(startedAt != -1) {
 							int[] xyEnter = intersepts[1];
 							points.add(xyEnter); //add first intercept
 							lastOut = new int[] {x, y, z};
-							addCorners(points, lastOut, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+							int[] xyzOffScreen = null;
+							int[] xyCenterPoint = calcPoint(xyzCenterPoint[0], xyzCenterPoint[1], xyzCenterPoint[2]);
+							if(xyCenterPoint == null || xyCenterPoint[0] < 0 || xyCenterPoint[0] > width || xyCenterPoint[1] < 0 || xyCenterPoint[1] > height) { //center point is off screen
+								xyzOnScreen = intersepts[2]; //middle point
+								xyzOffScreen = xyzCenterPoint;
+							} else {
+								xyzOnScreen = xyzCenterPoint;
+								xyzOffScreen = new int[] {x, y, z};
+							}
+							addCorners(points, xyzOffScreen, intersepts[2], xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 						} else {
 							startedAt = nextP;
 							dontBreak = true;
@@ -275,15 +313,24 @@ public class Screen extends JPanel{
 					if(startedAt != -1) {
 						int[] xyEnter;
 						if(xy != null) { //current point is in front of you just off screen
-							xyEnter = calcLine(xNext, yNext, zNext, x, y, z)[0];
+							xyEnter = calcLine(xNext, yNext, zNext, x, y, z, false)[0];
 //							xyEnter = calc2DIntersect(xyNextP, xy)[0];
 						} else { //current point is behind you
-							xyEnter = calcLine(face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2], x, y, z)[0];
+							xyEnter = calcLine(face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2], x, y, z, false)[0];
 						}
 						points.add(xyEnter);
 						
 						assert(lastOut != null);
-						addCorners(points, lastOut, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+						int[] xyzOffScreen = null;
+						int[] xyCenterPoint = calcPoint(xyzCenterPoint[0], xyzCenterPoint[1], xyzCenterPoint[2]);
+						if(xyCenterPoint == null || xyCenterPoint[0] < 0 || xyCenterPoint[0] > width || xyCenterPoint[1] < 0 || xyCenterPoint[1] > height) { //center point is off screen
+							xyzOnScreen = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
+							xyzOffScreen = xyzCenterPoint;
+						} else {
+							xyzOnScreen = xyzCenterPoint;
+							xyzOffScreen = new int[] {x, y, z};
+						}
+						addCorners(points, xyzOffScreen, xyzOnScreen, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 						
 						//reset
 						xyzFirstOut = null;
@@ -313,184 +360,153 @@ public class Screen extends JPanel{
 			System.out.println("x: " + points.get(i)[0] + " y: " + points.get(i)[1]);
 			xPointsArray[i] = points.get(i)[0];
 			yPointsArray[i] = points.get(i)[1];
-			g.setColor(Color.red);
-			g.fillOval(points.get(i)[0], points.get(i)[1], 5, 5);
-			g.drawString(i + "", points.get(i)[0], points.get(i)[1]);
+			//for debug
+//			g.setColor(Color.red);
+//			g.fillOval(points.get(i)[0], points.get(i)[1], 5, 5);
+//			g.drawString(i + "", points.get(i)[0], points.get(i)[1]);
 		}
 		g.setColor(Color.blue);
-		g.drawPolygon(xPointsArray, yPointsArray, xPointsArray.length);
+		if(fill == true) {
+//			int[][] 
+			if(xPointsArray.length == 0) {
+//				int x = face[p][0] + coords[0];
+//				int y = face[p][1] + coords[1];
+//				int z = face[p][2] + coords[2];
+//				//2d point
+//				int[] xy = calcPoint(x, y, z);
+			} else {
+				g.fillPolygon(xPointsArray, yPointsArray, xPointsArray.length);
+			}
+		} else { //fill == false
+			g.drawPolygon(xPointsArray, yPointsArray, xPointsArray.length);
+		}
 	}
 	
-//	private void addCorners(ArrayList<int[]> points, int[] xyzFirstOut, int[] xyzSecondOut, int[] xyExit, int[] xyEnter, int exitArrayNumber) { //points, 2d array entering point, 3d array first point out of screen, 3d array second point out of screen
-//		System.out.println("Adding corners");
-//		System.out.print("xyzFirstOut: ");
-//		printArray(xyzFirstOut);
-//		if(xyzSecondOut != null) {
-//			System.out.print("xyzSecondOut: ");
-//			printArray(xyzSecondOut);
-//		}
-//		System.out.print("xyExit: ");
-//		printArray(xyExit);
-//		System.out.print("xyEnter: ");
-//		printArray(xyEnter);
-//		System.out.println("exitArrayNumber: " + exitArrayNumber);
-//		
-//		double px = xyzFirstOut[0] - playerPos[0];
-//		double py = xyzFirstOut[1] - playerPos[1];
-//		double pz = xyzFirstOut[2] - playerPos[2];
-//		double pDistance = Math.sqrt(Math.pow(px, 2) + Math.pow(py, 2) + Math.pow(pz, 2)); //absolute distance
-//		
-//		double centerPointx = pDistance*Math.cos(Math.toRadians(playerPitch))*Math.cos(Math.toRadians(playerYaw)) + playerPos[0]; //+-
-//		double centerPointy = pDistance*Math.sin(Math.toRadians(playerPitch)) + playerPos[1]; //+-
-//		double centerPointz = pDistance*Math.cos(Math.toRadians(playerPitch))*Math.sin(Math.toRadians(playerYaw)) + playerPos[2]; //+-
-//		
-//		int[] intersect1 = calcLine((int)centerPointx, (int)centerPointy, (int)centerPointz, xyzFirstOut[0], xyzFirstOut[1], xyzFirstOut[2])[0]; //only 1 intercept	
-//		px = xyzFirstOut[0] - playerPos[0];
-//		py = xyzFirstOut[1] - playerPos[1];
-//		pz = xyzFirstOut[2] - playerPos[2];
-//		pDistance = Math.sqrt(Math.pow(px, 2) + Math.pow(py, 2) + Math.pow(pz, 2)); //absolute distance
-//		
-//		centerPointx = pDistance*Math.cos(Math.toRadians(playerPitch))*Math.cos(Math.toRadians(playerYaw)) + playerPos[0]; //+-
-//		centerPointy = pDistance*Math.sin(Math.toRadians(playerPitch)) + playerPos[1]; //+-
-//		centerPointz = pDistance*Math.cos(Math.toRadians(playerPitch))*Math.sin(Math.toRadians(playerYaw)) + playerPos[2]; //+-
-//		
-//		int[] intersect2;
-//		if(xyzSecondOut != null) {//more than one point outside screen consecutively 
-//			intersect2 = calcLine((int)centerPointx, (int)centerPointy, (int)centerPointz, xyzSecondOut[0], xyzSecondOut[1], xyzSecondOut[2])[0]; //only 1 intercept
-//		} else {
-//			intersect2 = xyEnter;
-//		}
-//		intersect2 = xyEnter;
-//		
-//		System.out.println("intersect1: ");
-//		printArray(intersect1);
-//		System.out.println("intersect2: ");
-//		printArray(intersect2);
-//		
-////		int[] middle = {width/2, height/2};
-////		
-////		int[] xyFirstOut = calcPoint(xyzFirstOut[0], xyzFirstOut[1], xyzFirstOut[2]);
-////		int[] intersect1 = calc2DIntersect(middle, xyFirstOut)[0];
-////		int[] intersect2;
-////		if(xyzSecondOut != null) {//more than one point outside screen consecutively 
-////			int[] xySecondOut = calcPoint(xyzSecondOut[0], xyzSecondOut[1], xyzSecondOut[2]);
-////			intersect2 = calc2DIntersect(middle, xySecondOut)[0];
-////		} else {
-////			intersect2 = xyEnter;
-////		}
-//		
-//		int xyExitSide = -1;
-//		int xyEnterSide = -1;
-//		if(xyExit[0] == 0) {
-//			xyExitSide = 0;
-//		} else if(xyExit[1] == 0) {
-//			xyExitSide = 1;
-//		} else if(xyExit[0] == width) {
-//			xyExitSide = 2;
-//		} else if(xyExit[1] == height) {
-//			xyExitSide = 3;
-//		}
-//		if(xyEnter[0] == 0) {
-//			xyEnterSide = 0;
-//		} else if(xyEnter[1] == 0) {
-//			xyEnterSide = 1;
-//		} else if(xyEnter[0] == width) {
-//			xyEnterSide = 2;
-//		} else if(xyEnter[1] == height) {
-//			xyEnterSide = 3;
-//		}
-//		
-//		//
-//		//Add all corners between exit and entry points
-//		//
-//		
-//		//set perimeter distances (distance clockwise around the rectangle from the top left corner)
-//		int xyExitPerimeterDistance = xyExit[0] + xyExit[1];
-//		if(xyExit[0] == width || xyExit[1] == 0) {
-//			//do nothing
-//		} else {
-//			xyExitPerimeterDistance = width*2 + height*2 - xyExitPerimeterDistance;
-//		}
-//		
-//		int xyEnterPerimeterDistance = xyEnter[0] + xyEnter[1];
-//		if(xyEnter[0] == width || xyEnter[1] == 0) {
-//			//do nothing
-//		} else {
-//			xyEnterPerimeterDistance = width*2 + height*2 - xyEnterPerimeterDistance;
-//		}
-//		
-//		int intersect1PerimeterDistance = intersect1[0] + intersect1[1];
-//		if(intersect1[0] == width || intersect1[1] == 0) {
-//			//do nothing
-//		} else {
-//			intersect1PerimeterDistance = width*2 + height*2 - intersect1PerimeterDistance;
-//		}
-//		
-//		int intersect2PerimeterDistance = intersect2[0] + intersect2[1];
-//		if(intersect2[0] == width || intersect2[1] == 0) {
-//			//do nothing
-//		} else {
-//			intersect2PerimeterDistance = width*2 + height*2 - intersect2PerimeterDistance;
-//		}
-//		
-//		//corners are in clockwise order
-//		int[][] corners = new int[4][2];
-//		corners[0] = new int[] {0, 0}; //top left
-//		corners[1] = new int[] {width, 0}; //top right
-//		corners[2] = new int[] {width, height}; //bottom right
-//		corners[3] = new int[] {0, height}; //bottom left
-//		
-//		int difference = intersect2PerimeterDistance - intersect1PerimeterDistance;
-//		//reduce difference to shortest distance if needed
-//
-//		if(difference > width + height) {
-//			difference = difference - 2*(width + height);
-//		} else if(difference < -(width + height)) {
-//			difference = difference + 2*(width + height);
-//		}
-//		
-//		if(difference >= 0) {//go clockwise
-//			if(xyExitPerimeterDistance < xyEnterPerimeterDistance) { //does not need to loop around
-//				System.out.println("not looping");
-//				int j = 0;
-//				for(int i = xyExitSide; i < xyEnterSide; i++) {
-//					try {
-//						points.add(exitArrayNumber + 1 + j, corners[i]);
-//					} catch (ArrayIndexOutOfBoundsException e) {
-//						System.out.println(e);
-//						System.out.println("exitp[1]: " + exitArrayNumber);
-//						for(int k = 0; k < points.size(); k++) {
-//							System.out.println("k " + points.get(k)[0] + " " + points.get(k)[1]);
-//						}
-//					}
-//					j++;
-//				}
-//			} else { //does need to loop around
-//				System.out.println("looping");
-//				int j = 0;
-//				for(int i = xyExitSide; i < xyEnterSide + 4; i++) {
-//					points.add(exitArrayNumber + 1 + j, corners[i % 4]);
-//					j++;
-//				}
-//			}
-//		} else {//go counter clockwise
-//			if(xyExitPerimeterDistance > xyEnterPerimeterDistance) { //does not need to loop around
-//				System.out.println("not looping");
-//				int j = 0;
-//				for(int i = xyExitSide - 1; i >= xyEnterSide; i--) {
-//					points.add(exitArrayNumber + 1 + j, corners[i]);
-//					j++;
-//				}
-//			} else { //does need to loop around
-//				System.out.println("looping");
-//				int j = 0;
-//				for(int i = xyExitSide - 1; i >= xyEnterSide - 4; i--) {
-//					points.add(exitArrayNumber + 1 + j, corners[(i + 4) % 4]);
-//					j++;
-//				}
-//			}
-//		}
-//	}
+	private void addCorners(ArrayList<int[]> points, int[] xyzOffScreen, int[] xyzOnScreen, int[] xyzFirstOut, int[] xyzSecondOut, int[] xyExit, int[] xyEnter, int exitArrayNumber) { //points, 2d array entering point, 3d array first point out of screen, 3d array second point out of screen
+		System.out.println("Adding corners");
+		System.out.print("xyzFirstOut: ");
+		printArray(xyzFirstOut);
+		if(xyzSecondOut != null) {
+			System.out.print("xyzSecondOut: ");
+			printArray(xyzSecondOut);
+		}
+		System.out.print("xyExit: ");
+		printArray(xyExit);
+		System.out.print("xyEnter: ");
+		printArray(xyEnter);
+		System.out.println("exitArrayNumber: " + exitArrayNumber);
+		
+		int[] intersects = calcPoint(xyzOffScreen[0], xyzOffScreen[1], xyzOffScreen[2]);
+		if(intersects != null) {
+			System.out.println("Shit");
+		}
+		intersects = calcPoint(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2]);
+		if(intersects == null) {
+			System.out.println("Shit");
+		}
+		int[] intersect = calcLine(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2], xyzOffScreen[0], xyzOffScreen[1], xyzOffScreen[2], false)[0]; //only 1 intercept
+		
+		
+		int xyExitSide = -1;
+		int xyEnterSide = -1;
+		if(xyExit[0] == 0) {
+			xyExitSide = 3;
+		} else if(xyExit[1] == 0) {
+			xyExitSide = 0;
+		} else if(xyExit[0] == width) {
+			xyExitSide = 1;
+		} else if(xyExit[1] == height) {
+			xyExitSide = 2;
+		}
+		if(xyEnter[0] == 0) {
+			xyEnterSide = 3;
+		} else if(xyEnter[1] == 0) {
+			xyEnterSide = 0;
+		} else if(xyEnter[0] == width) {
+			xyEnterSide = 1;
+		} else if(xyEnter[1] == height) {
+			xyEnterSide = 2;
+		}
+		
+		//
+		//Add all corners between exit and entry points
+		//
+		
+		//set perimeter distances (distance clockwise around the rectangle from the top left corner)
+		int xyExitPerimeterDistance = xyExit[0] + xyExit[1];
+		if(xyExit[0] == width || xyExit[1] == 0) {
+			//do nothing
+		} else {
+			xyExitPerimeterDistance = width*2 + height*2 - xyExitPerimeterDistance;
+		}
+		
+		int xyEnterPerimeterDistance = xyEnter[0] + xyEnter[1];
+		if(xyEnter[0] == width || xyEnter[1] == 0) {
+			//do nothing
+		} else {
+			xyEnterPerimeterDistance = width*2 + height*2 - xyEnterPerimeterDistance;
+		}
+		
+		int intersectPerimeterDistance = intersect[0] + intersect[1];
+		if(intersect[0] == width || intersect[1] == 0) {
+			//do nothing
+		} else {
+			intersectPerimeterDistance = width*2 + height*2 - intersectPerimeterDistance;
+		}
+		
+		//corners are in clockwise order
+		int[][] corners = new int[4][2];
+		corners[0] = new int[] {width, 0}; //top right
+		corners[1] = new int[] {width, height}; //bottom right
+		corners[2] = new int[] {0, height}; //bottom left
+		corners[3] = new int[] {0, 0}; //top left
+		
+		
+		boolean clockwise = true;
+		if(intersectPerimeterDistance < xyEnterPerimeterDistance) {
+			if(intersectPerimeterDistance < xyExitPerimeterDistance) {
+				if(xyExitPerimeterDistance < xyEnterPerimeterDistance) {
+					clockwise = true;
+				} else { //xyExitPerimeterDistance > xyEnterPerimeterDistance
+					clockwise = false;
+				}
+			} else { //intersectPerimeterDistance > xyExitPerimeterDistance
+				clockwise = false;
+			}
+		} else { //intersectPerimeterDistance > xyEnterPerimeterDistance
+			if(intersectPerimeterDistance < xyExitPerimeterDistance) {
+				clockwise = true;
+			} else { //intersectPerimetDistance > xyExitPerimetDistance
+				if(xyExitPerimeterDistance > xyEnterPerimeterDistance) {
+					clockwise = false;
+				} else { //xyExitPerimeterDistance > xyEnterPerimeterDistance
+					clockwise = true;
+				}
+			}
+		}
+		
+		if(clockwise) {
+			int i = xyEnterSide;
+			while(i != xyExitSide) {
+				points.add(exitArrayNumber + 1, corners[i]);
+				
+				i++;
+				if(i == 4) {
+					i = 0;
+				}
+			}
+		} else { //counter-clockwise
+			int i = xyEnterSide;
+			while(i != xyExitSide) {
+				i--;
+				if(i == -1) {
+					i = 3;
+				}
+				points.add(exitArrayNumber + 1, corners[i]);
+				
+			}
+		}
+	}
 	
 	
 	private void paintGrid(Graphics g, int size) {
@@ -607,7 +623,7 @@ public class Screen extends JPanel{
 		return xy2D;
 	}
 	
-	private int[][] calcLine(int x, int y, int z, int xo, int yo, int zo) {
+	private int[][] calcLine(int x, int y, int z, int xo, int yo, int zo, boolean returnMiddle) {
 		//all pitch and yaw go from 180 (all the way left) to -180 (all the way right). Absolute yaw/pitch are relative to +X axis
 		//y is verticle direction
 		
@@ -785,8 +801,9 @@ public class Screen extends JPanel{
 	    double bV = -mV*z2D;
 	    
 	    double[][] zxe2DArray = {null, null}; //first point in the array is the one closest to the first point passed as input into the function
-	    double yofIntersFirst = -1;
-	    double yofIntersSecond = -1;
+	    
+	    double[] xyzFirstInters = null;
+	    double[] xyzSecondInters = null;
 	    
 	    //Horizontal
 	    //check for intersection on triangle 1
@@ -796,7 +813,7 @@ public class Screen extends JPanel{
 	    double zofInters = (yofInters - bV)/mV;
 	    if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(zofInters/xofInters) <= height/width) { //intersection point is on triangle 1
 	    	zxe2DArray[0] = new double[] {(zofInters/xofInters)*(-width/2), -width/2};
-	    	yofIntersFirst = yofInters;
+	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
 	    }
 	    //check for intersection on triangle 2
     	xofInters = (virtualDistance - bH)/(mH - (-m1)); // other side is -m1
@@ -805,10 +822,10 @@ public class Screen extends JPanel{
  	    if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(zofInters/xofInters) <= height/width) { //intersection point is on triangle 2
 	 	    if(zxe2DArray[0] == null) { //first point hasn't been found
 	 	    	zxe2DArray[0] = new double[] {(zofInters/xofInters)*(width/2), width/2};
-	 	    	yofIntersFirst = yofInters;
+	 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
  	    	} else {
     			zxe2DArray[1] = new double[] {(zofInters/xofInters)*(width/2), width/2};
-    			yofIntersSecond = yofInters;
+    			xyzSecondInters = new double[] {xofInters, yofInters, zofInters};
  	    	}
  	    }
  	    //Vertical
@@ -820,10 +837,10 @@ public class Screen extends JPanel{
     	if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(xofInters/zofInters) <= width/height) { //intersection point is on triangle 3
     		if(zxe2DArray[0] == null) { //first point hasn't been found
 	 	    	zxe2DArray[0] = new double[] {-height/2, (xofInters/zofInters)*(-height/2)};
-	 	    	yofIntersFirst = yofInters;
+	 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
  	    	} else {
     			zxe2DArray[1] = new double[] {-height/2, (xofInters/zofInters)*(-height/2)};
-    			yofIntersSecond = yofInters;
+    			xyzSecondInters = new double[] {xofInters, yofInters, zofInters};
  	    	}
     	}
     	//check for intersection on triangle 4
@@ -833,23 +850,47 @@ public class Screen extends JPanel{
 		if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(xofInters/zofInters) <= width/height) { //intersection point is on triangle 3
     		if(zxe2DArray[0] == null) { //first point hasn't been found
 	 	    	zxe2DArray[0] = new double[] {height/2, (xofInters/zofInters)*(height/2)};
-	 	    	yofIntersFirst = yofInters;
+	 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
  	    	} else {
     			zxe2DArray[1] = new double[] {height/2, (xofInters/zofInters)*(height/2)};
-    			yofIntersSecond = yofInters;
+    			xyzSecondInters = new double[] {xofInters, yofInters, zofInters};
  	    	}
 		}
 		
+		int[] xyzMiddle = null;
 		if(zxe2DArray[1] != null) {
-			assert(yofIntersSecond != -1);
-			if(Math.abs(yofIntersSecond) < Math.abs(yofIntersFirst)) {
+			if(Math.abs(xyzSecondInters[1]) < Math.abs(xyzFirstInters[1])) {
 				double[] temp = zxe2DArray[0];
 				zxe2DArray[0] = zxe2DArray[1];
 				zxe2DArray[1] = temp;
+				temp = xyzFirstInters;
+				xyzFirstInters = xyzSecondInters;
+				xyzSecondInters = temp;
+			}
+			
+			if(returnMiddle) {
+				double mainDistance = Math.sqrt(Math.pow(p2x - x2D, 2) + Math.pow(p2y - 0, 2) + Math.pow(p2z - z2D, 2));
+				System.out.println("Two point distance: " + mainDistance);
+				double inters1p2 = Math.sqrt(Math.pow(p2x - xyzFirstInters[0], 2) + Math.pow(p2y - xyzFirstInters[1], 2) + Math.pow(p2z - xyzFirstInters[2], 2));
+				double inters2p2 = Math.sqrt(Math.pow(p2x - xyzSecondInters[0], 2) + Math.pow(p2y - xyzSecondInters[1], 2) + Math.pow(p2z - xyzSecondInters[2], 2));
+				double middle = (inters1p2 + inters2p2)/2;
+				double middleRatio = middle/mainDistance;
+				xyzMiddle = new int[3];
+				xyzMiddle[0] = (int) (middleRatio*(x - xo) + xo);
+				xyzMiddle[1] = (int) (middleRatio*(y - yo) + yo);
+				xyzMiddle[2] = (int) (middleRatio*(z - zo) + zo);
 			}
 		}
 		
-		int[][] xy2D = {null, null};
+		
+		
+		
+		int[][] xy2D = null;
+		if(xyzMiddle != null) {
+			xy2D = new int[][] {null, null, xyzMiddle};
+		} else {
+			xy2D = new int[][] {null, null};
+		}
 		
 	    if(zxe2DArray[0] != null) {
 	    	xy2D[0] = new int[2];
@@ -865,6 +906,7 @@ public class Screen extends JPanel{
 		if(xy2D[0] == null && xy2D[1] == null) {
 			xy2D = null;
 		}
+		
 		return xy2D;
 	}
 	
