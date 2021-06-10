@@ -121,7 +121,7 @@ public class Screen extends JPanel{
 		boolean dontBreak = false;
 		int[] lastOut = null;
 		//centerPoint is the middle of the face and is used for adding corners
-		int[] xyzCenterPoint = new int[3];
+		int[] xyzCenterPoint = {0, 0, 0};
 		for(int i = 0; i < face.length; i++) {
 			xyzCenterPoint[0] += face[i][0];
 			xyzCenterPoint[1] += face[i][1];
@@ -222,7 +222,7 @@ public class Screen extends JPanel{
 						xyzSecondOut = new int[] {face[nextP][0] + coords[0], face[nextP][1] + coords[1], face[nextP][2] + coords[2]};
 					}
 				}
-			} else if(xyNextP[0] < 0 || xyNextP[0] > width || xyNextP[1] < 0 || xyNextP[1] > height) { //next point is off screen
+			} else if(xyNextP[0] < 0 || xyNextP[0] > width || xyNextP[1] < 0 || xyNextP[1] > height) { //next point is in front but off screen
 				if(xy != null) { //current point is in front of you
 					if(offScreen == false) { //current point is on screen
 						if(startedAt == -1) {
@@ -404,8 +404,15 @@ public class Screen extends JPanel{
 		if(intersects == null) {
 			System.out.println("Shit");
 		}
+		if(playerPitch == -90) {
+			System.out.println("blah");
+		}
+//		int[] intersect = {1, 2};
+//		try {
 		int[] intersect = calcLine(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2], xyzOffScreen[0], xyzOffScreen[1], xyzOffScreen[2], false)[0]; //only 1 intercept
-		
+//		} catch(Exception e) {
+//			System.out.println("error");
+//		}
 		
 		int xyExitSide = -1;
 		int xyEnterSide = -1;

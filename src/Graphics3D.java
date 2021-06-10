@@ -31,7 +31,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 	int speed = 5; // m/s
 	int sensitivity = 30;
 	double velocity = 0; // m/s
-	double g = -9.8; // m/s^2
+	double g = 0; // m/s^2
 	boolean forward = false;
 	boolean backward = false;
 	boolean left = false;
@@ -73,17 +73,11 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		screen.setPlayerHeight(playerHeight);
 		screen.setFOV(110);
 		playerPos[0] = 654;
-		playerPos[1] = 0;
+		playerPos[1] = 122;
 		playerPos[2] = 596;
 		updatePlayerPos();
-		updatePlayerYaw(-37);
-		updatePlayerPitch(18);
-//		playerPos[0] = 0;
-//		playerPos[1] = 0;
-//		playerPos[2] = 0;
-//		updatePlayerPos();
-//		updatePlayerYaw(45);
-//		updatePlayerPitch(0);
+		updatePlayerYaw(20);
+		updatePlayerPitch(-90);
 		forms.add( new RectPrism(100, 100, 100, 50, 50, 500) );
 		forms.add( new Plane(500, 100, 1000, 300, -800));
 		screen.setForms(forms);
@@ -163,7 +157,7 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 				
 				//process keyboard input
 				if(space == true && playerPos[1] <= 0) {
-					velocity += 20;
+					velocity += 10;
 				}
 				
 				double pixelChange = speed*time*50;
