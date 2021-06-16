@@ -72,11 +72,11 @@ public class Graphics3D implements KeyListener, MouseInputListener{
 		
 		screen.setPlayerHeight(playerHeight);
 		screen.setFOV(110);
-		playerPos[0] = 654;
+		playerPos[0] = 635;
 		playerPos[1] = 122;
-		playerPos[2] = 596;
+		playerPos[2] = 811;
 		updatePlayerPos();
-		updatePlayerYaw(20);
+		updatePlayerYaw(21);
 		updatePlayerPitch(-90);
 		forms.add( new RectPrism(100, 100, 100, 50, 50, 500) );
 		forms.add( new Plane(500, 100, 1000, 300, -800));

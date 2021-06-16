@@ -36,11 +36,11 @@ public class Screen extends JPanel{
 			for(int f = 0; f < forms.size(); f++)  {
 				Form currentForm = forms.get(f);
 				if(currentForm.getType() == RECTPRISM) {
-					RectPrism currentPrism = (RectPrism)currentForm;
-					int[][][] faces = currentPrism.getFaces();
-					for(int s = 0; s < faces.length; s++) {
-						paintFace(g, currentPrism.getCoords(), faces[s], false);
-					}
+//					RectPrism currentPrism = (RectPrism)currentForm;
+//					int[][][] faces = currentPrism.getFaces();
+//					for(int s = 0; s < faces.length; s++) {
+//						paintFace(g, currentPrism.getCoords(), faces[s], false);
+//					}
 				} else if(currentForm.getType() == PLANE) {
 					Plane currentPlane = (Plane)currentForm;
 					int[][] face = currentPlane.getFace();
@@ -198,7 +198,10 @@ public class Screen extends JPanel{
 									xyzOnScreen = xyzCenterPoint;
 									xyzOffScreen = new int[] {x, y, z};
 								}
-								addCorners(points, xyzOffScreen, intersepts[2], xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+								if(calcPoint(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2]) == null) {
+									System.out.println("Oh no");
+								}
+								addCorners(points, xyzOffScreen, xyzOnScreen, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
 								dontBreak = true;
@@ -247,11 +250,14 @@ public class Screen extends JPanel{
 								if(xyCenterPoint == null || xyCenterPoint[0] < 0 || xyCenterPoint[0] > width || xyCenterPoint[1] < 0 || xyCenterPoint[1] > height) { //center point is off screen
 									xyzOnScreen = intersepts[2]; //middle point
 									xyzOffScreen = xyzCenterPoint;
-								} else {
+								} else { //center point on screen
 									xyzOnScreen = xyzCenterPoint;
 									xyzOffScreen = new int[] {x, y, z};
 								}
-								addCorners(points, xyzOffScreen, intersepts[2], xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+								if(calcPoint(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2]) == null) {
+									System.out.println("Oh no");
+								}
+								addCorners(points, xyzOffScreen, xyzOnScreen, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
 								dontBreak = true;
@@ -291,7 +297,10 @@ public class Screen extends JPanel{
 								xyzOnScreen = xyzCenterPoint;
 								xyzOffScreen = new int[] {x, y, z};
 							}
-							addCorners(points, xyzOffScreen, intersepts[2], xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
+							if(calcPoint(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2]) == null) {
+								System.out.println("Oh no");
+							}
+							addCorners(points, xyzOffScreen, xyzOnScreen, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 						} else {
 							startedAt = nextP;
 							dontBreak = true;
@@ -329,6 +338,9 @@ public class Screen extends JPanel{
 						} else {
 							xyzOnScreen = xyzCenterPoint;
 							xyzOffScreen = new int[] {x, y, z};
+						}
+						if(calcPoint(xyzOnScreen[0], xyzOnScreen[1], xyzOnScreen[2]) == null) {
+							System.out.println("Oh no");
 						}
 						addCorners(points, xyzOffScreen, xyzOnScreen, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 						
@@ -817,16 +829,16 @@ public class Screen extends JPanel{
 	    double m1 = virtualDistance/(width/2); // y-intercept for m1 and m2 is virtualDistance
 	    double xofInters = (virtualDistance - bH)/(mH - m1);
 	    double yofInters = m1*xofInters + virtualDistance;
-	    double zofInters = (yofInters - bV)/mV;
-	    if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(zofInters/xofInters) <= height/width) { //intersection point is on triangle 1
+	    double zofInters = (p2z -  z2D)/(p2x - x2D)*(xofInters - x2D) + z2D;//(yofInters - bV)/mV;
+	    if(((xofInters > x2D && xofInters < p2x) || (xofInters < x2D && xofInters > p2x) || (zofInters > z2D && zofInters < p2z) || (zofInters < z2D && zofInters > p2z)) && yofInters <= virtualDistance && Math.abs(zofInters/xofInters) <= height/width) { //intersection point is on triangle 1
 	    	zxe2DArray[0] = new double[] {(zofInters/xofInters)*(-width/2), -width/2};
 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
 	    }
 	    //check for intersection on triangle 2
     	xofInters = (virtualDistance - bH)/(mH - (-m1)); // other side is -m1
  	    yofInters = -m1*xofInters + virtualDistance;
- 	    zofInters = (yofInters - bV)/mV;
- 	    if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(zofInters/xofInters) <= height/width) { //intersection point is on triangle 2
+ 	    zofInters = (p2z -  z2D)/(p2x - x2D)*(xofInters - x2D) + z2D;//(yofInters - bV)/mV;
+ 	    if(((xofInters > x2D && xofInters < p2x) || (xofInters < x2D && xofInters > p2x) || (zofInters > z2D && zofInters < p2z) || (zofInters < z2D && zofInters > p2z)) && yofInters <= virtualDistance && Math.abs(zofInters/xofInters) <= height/width) { //intersection point is on triangle 2
 	 	    if(zxe2DArray[0] == null) { //first point hasn't been found
 	 	    	zxe2DArray[0] = new double[] {(zofInters/xofInters)*(width/2), width/2};
 	 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
@@ -840,8 +852,8 @@ public class Screen extends JPanel{
     	double m2 = virtualDistance/(height/2);
     	zofInters = (virtualDistance - bV)/(mV - m2);
     	yofInters = m2*zofInters + virtualDistance;
-    	xofInters = (yofInters - bH)/mH;
-    	if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(xofInters/zofInters) <= width/height) { //intersection point is on triangle 3
+    	xofInters = (p2x - x2D)/(p2z -  z2D)*(zofInters - z2D) + x2D;//(yofInters - bH)/mH;
+    	if(((xofInters > x2D && xofInters < p2x) || (xofInters < x2D && xofInters > p2x) || (zofInters > z2D && zofInters < p2z) || (zofInters < z2D && zofInters > p2z)) && yofInters <= virtualDistance && Math.abs(xofInters/zofInters) <= width/height) { //intersection point is on triangle 3
     		if(zxe2DArray[0] == null) { //first point hasn't been found
 	 	    	zxe2DArray[0] = new double[] {-height/2, (xofInters/zofInters)*(-height/2)};
 	 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
@@ -853,8 +865,8 @@ public class Screen extends JPanel{
     	//check for intersection on triangle 4
 		zofInters = (virtualDistance - bV)/(mV - (-m2));
 		yofInters = -m2*zofInters + virtualDistance;
-		xofInters = (yofInters - bH)/mH;
-		if(((yofInters > 0 && yofInters < p2y) || (yofInters < 0 && yofInters > p2y)) && yofInters <= virtualDistance && Math.abs(xofInters/zofInters) <= width/height) { //intersection point is on triangle 3
+		xofInters = (p2x - x2D)/(p2z -  z2D)*(zofInters - z2D) + x2D;//(yofInters - bH)/mH;
+		if(((xofInters > x2D && xofInters < p2x) || (xofInters < x2D && xofInters > p2x) || (zofInters > z2D && zofInters < p2z) || (zofInters < z2D && zofInters > p2z)) && yofInters <= virtualDistance && Math.abs(xofInters/zofInters) <= width/height) { //intersection point is on triangle 3
     		if(zxe2DArray[0] == null) { //first point hasn't been found
 	 	    	zxe2DArray[0] = new double[] {height/2, (xofInters/zofInters)*(height/2)};
 	 	    	xyzFirstInters = new double[] {xofInters, yofInters, zofInters};
@@ -914,6 +926,10 @@ public class Screen extends JPanel{
 			xy2D = null;
 		}
 		
+		if(xy2D == null) {
+//			System.out.println("Inside point: " + calcPoint(x, y, z)[0] + " " + calcPoint(x, y, z)[1]);
+//			System.out.println("Outside point: " + calcPoint(xo, yo, zo)[0] + " " + calcPoint(xo, yo, zo)[1]);
+		}
 		return xy2D;
 	}
 	
@@ -994,9 +1010,9 @@ public class Screen extends JPanel{
 	}
 	
 	private void printArray(int[] array) {
-		for(int i = 0; i < array.length; i++) {
-			System.out.print(array[i] + " ");
-		}
+//		for(int i = 0; i < array.length; i++) {
+//			System.out.print(array[i] + " ");
+//		}
 		System.out.print('\n');
 	}
 	
