@@ -19,6 +19,13 @@ public class Screen extends JPanel{
 	int NEGATIVE = 2;
 	int UNSET = 9000;
 	int ZERO = 0;
+	int ONSCREEN = 0;
+	int	EXIT = 1;
+	int ENTER = 2;
+	double NOANGLE = 10000;
+	double BEHIND = 11000;
+	boolean CLOCKWISE = true;
+	boolean COUNTERCLOCKWISE = false;
 	int width;
 	int height;
 	double[] playerPos = new double[3];
@@ -219,6 +226,10 @@ public class Screen extends JPanel{
 									System.out.println("Oh no");
 								}
 								double middleAngle = averageAngle(exitAngle, enterAngle);
+								if(middleAngle == NOANGLE) { //angles are opposite one another and therefore there's no defined middle angle
+									
+								}
+								boolean clockwise = findDirection()
 								addCorners(points, xyzOffScreen, xyzOnScreen, xyzFirstOut, xyzSecondOut, points.get(exitArrayNumber), xyEnter, exitArrayNumber);
 							} else {
 								startedAt = nextP;
@@ -1038,13 +1049,6 @@ public class Screen extends JPanel{
 				intersects[1] = null;
 			}
 		}
-//		System.out.println("Points: " + xy1[0]  + " " + xy1[1] + "  " + xy2[0] + " " + xy2[1]);
-//		if(intersects[0] != null) {
-//			System.out.println("Intersects: " + intersects[0][0] + " " + intersects[0][1]);
-//		}
-//		if(intersects[1] != null) {
-//			System.out.println("Intersects: " + intersects[1][0] + " " + intersects[1][1]);
-//		}
 		
 		if(intersects[1] != null) {
 			if(Math.abs(intersects[0][0] - xy1[0]) > Math.abs(intersects[1][0] - xy1[0])) { //need to switch points
@@ -1086,9 +1090,213 @@ public class Screen extends JPanel{
 		return Math.toDegrees(angle);
 	}
 	
+	public double calcAngle3D(int[] xyz1, int[] xyz2) {//calculates angle between two points with respect to your visual plane
+		//all pitch and yaw go from 180 (all the way left) to -180 (all the way right). Absolute yaw/pitch are relative to +X axis
+		//y is verticle direction
+		
+		int x = xyz1[0];
+		int y = xyz1[1];
+		int z = xyz1[2];
+		
+		double px = x - playerPos[0];
+		double py = y - playerPos[1];
+		double pz = z - playerPos[2];
+		double pDistance = Math.sqrt(Math.pow(px, 2) + Math.pow(py, 2) + Math.pow(pz, 2)); //absolute distance
+		double pXZ = Math.sqrt(Math.pow(px, 2) + Math.pow(pz, 2)); //absolute distance
+		
+		double vx = pDistance*Math.cos(Math.toRadians(playerPitch))*Math.cos(Math.toRadians(playerYaw)); //+-
+		double vy = pDistance*Math.sin(Math.toRadians(playerPitch)); //+-
+		double vz = pDistance*Math.cos(Math.toRadians(playerPitch))*Math.sin(Math.toRadians(playerYaw)); //+-
+		
+		//calc point yaw
+		if(pz/pXZ > 1) { //this should not happen in theory but because of rounding errors by the computer it can happen by a very small amount
+			pz = pXZ;
+		}
+		double pYaw = Math.toDegrees(Math.asin(pz/pXZ));
+		
+		if(px < 0 && pYaw >= 0) {
+			pYaw = 180 - pYaw;
+		} else if(px < 0 && pYaw < 0) {
+			pYaw = -180 - pYaw;
+		}
+		
+		//calc difference between point yaw and player yaw
+		double yawDif = pYaw - playerYaw;
+		
+		//Choose yawDif to the smaller angle if it represents the longer ( > 180) angle
+		if(yawDif > 180) {
+			yawDif = yawDif - 360;
+		} else if(yawDif < -180) {
+			yawDif = yawDif + 360;
+		}
+		
+		//absolute distance from view point to point, in three dimensions
+		double vpDistance = Math.sqrt(Math.pow(px - vx, 2) + Math.pow(py - vy, 2) + Math.pow(pz - vz, 2));
+		
+		/***
+		 *     Perpendicular Triangle:                  Rotation Triangle:
+		 *      ____                                    
+		 *     | a /                                    |\
+		 *   b |  /									  a | \
+		 *     | / pDistance							|  \
+		 *     |/                           			 \  \ c
+		 * 												 a \ \	
+		 * 													 \\
+		 * 													   \
+		 * 
+		 */												    
+		
+		double absAngle = 2*Math.toDegrees(Math.asin(vpDistance/(2*pDistance)));
+		double a = Math.sin(Math.toRadians(absAngle))*pDistance;
+		double b = Math.cos(Math.toRadians(absAngle))*pDistance; //this will be used later
+		double refPointX = pDistance*Math.cos(Math.toRadians(playerPitch + absAngle))*Math.cos(Math.toRadians(playerYaw)); //+-
+	    double refPointY = pDistance*Math.sin(Math.toRadians(playerPitch + absAngle)); //+-
+	    double refPointZ = pDistance*Math.cos(Math.toRadians(playerPitch + absAngle))*Math.sin(Math.toRadians(playerYaw)); //+-
+	    double c = Math.sqrt(Math.pow(px - refPointX, 2) + Math.pow(py - refPointY, 2) + Math.pow(pz - refPointZ, 2)); //absolute distance
+	    if(c/(2*a) > 1) { //this should not happen in theory but because of rounding errors by the computer it can happen by a very small amount
+	    	c = 2*a;
+	    }
+	    double absRotateAngle = 2*Math.toDegrees(Math.asin(c/(2*a)));
+	    if(yawDif < 0) { 
+	    	absRotateAngle *= -1;
+	    } //else it remains positive
+	    
+	    if(absAngle > 90) { //point is behind player
+	    	return BEHIND;
+	    }
+		
+		int xo = xyz2[0];
+		int yo = xyz2[1];
+		int zo = xyz2[3];
+		
+		double p2x = xo - playerPos[0];
+		double p2y = yo - playerPos[1];
+		double p2z = zo - playerPos[2];
+		
+		////first step of translation: move coordinate plane to 0,0
+		p2x = p2x - vx;
+		p2y = p2y - vy;
+		p2z = p2z - vz;
+		
+		////second step of translation: rotate yaw of coordinate plane to face +z
+		double p2xz = Math.sqrt(Math.pow(p2x, 2) + Math.pow(p2z, 2)); //distance formula
+		double p2Yaw = Math.toDegrees(Math.atan(p2z/p2x));
+		if(p2x < 0) {
+			if(p2Yaw < 0) {
+				p2Yaw += 180;
+			} else {
+				p2Yaw -= 180;
+			}
+		}
+		if(Double.isNaN(p2Yaw)) {
+			if(p2z > 0) {
+				p2Yaw = 90;
+			} else {
+				p2Yaw = -90;
+			}
+		}
+		
+		double newYaw = p2Yaw - (playerYaw - 90);
+			
+		//Choose newYaw to the smaller angle if it represents the longer ( > 180) angle
+		if(newYaw > 180) {
+			newYaw = newYaw - 360;
+		} else if(newYaw < -180) {
+			newYaw = newYaw + 360;
+		}
+		
+		//update x and z to reflect new yaw
+		p2x = Math.cos(Math.toRadians(newYaw))*p2xz;
+		p2z = Math.sin(Math.toRadians(newYaw))*p2xz;
+		
+		////third step of translation: rotate pitch of coordinate plane to face +x
+		double tiltAngle = playerPitch + 90;
+		double p2zy = Math.sqrt(Math.pow(p2z, 2) + Math.pow(p2y, 2)); //distance formula
+		double p2Pitch = Math.toDegrees(Math.atan(p2y/p2z));
+		if(p2z < 0) {
+			if(p2Pitch < 0) {
+				p2Pitch += 180;
+			} else {
+				p2Pitch -= 180;
+			}
+		}
+		if(Double.isNaN(p2Pitch)) {
+			if(p2y > 0) {
+				p2Pitch = 90;
+			} else {
+				p2Pitch = -90;
+			}
+		}
+		
+		double newPitch = p2Pitch - tiltAngle;
+			
+		//Choose newPitch to the smaller angle if it represents the longer ( > 180) angle
+		if(newPitch > 180) {
+			newPitch = newPitch - 360;
+		} else if(newPitch < -180) {
+			newPitch = newPitch + 360;
+		}
+		
+		//update z and y to reflect new pitch
+		p2z = Math.cos(Math.toRadians(newPitch))*p2zy;
+		p2y = Math.sin(Math.toRadians(newPitch))*p2zy - (pDistance - b); 
+		//(pDistance - b) is the height difference between the view plane and screen plane
+		//the x/z coordinates do not need to be adjusted because they're the same for both
+		double virtualDistance = (width/2)/Math.tan(Math.toRadians(FOV/2));
+		p2x = (virtualDistance/b)*p2x;
+		p2y = (virtualDistance/b)*p2y;
+		p2z = (virtualDistance/b)*p2z;
+		
+		//virtualDistance = distance to virtual screen based on width and FOV
+	    double x2D = Math.cos(Math.toRadians(90 + absRotateAngle))*Math.tan(Math.toRadians(absAngle))*virtualDistance;    
+	    double z2D = Math.sin(Math.toRadians(90 + absRotateAngle))*Math.tan(Math.toRadians(absAngle))*virtualDistance;
+	    
+	    /***
+	     *      ____________________                     
+	     *     |\                  /|                   /\
+	     *     |   \      4     /   |          \       /  \
+	     *     |      \      /      |            \    /    \
+	     *     |  1      \/      2  |              \ /      \
+	     *     |         /\         |    Point of ->/\       \
+	     *     |      /      \      |  intersection/   \      \
+	     *     |   /      3     \   |             /      \     \
+	     *     |/__________________\|            /_________\____\
+	     *        Top down view                      Side view
+	     *      
+	     *  Triangles are viewed from the side perpendicular to them
+	     */
+	    
+	    //find angle relative to first point (x2D and z2D)
+	    double xDif = p2x - x2D;
+		double yDif = p2z - z2D;
+		double angle = Math.asin(yDif/xDif);
+		if(xDif < 0) {
+			angle += Math.PI;
+		}
+		if(xDif == 0) {
+			if(yDif > 0) {
+				angle = Math.PI/2;
+			} else if(yDif < 0) {
+				angle = -Math.PI/2;
+			}
+		}
+		
+		angle = Math.toDegrees(angle); // convert to degrees
+		//keep angle within 180 to -180 degrees
+		if(angle > 180) {
+			angle -= 360;
+		} else if(angle < -180) {
+			angle += 360;
+		}
+		return angle;
+	}
+	
+	
 	public double averageAngle(double angle1, double angle2) {
+		if(angle1 - angle2 == 180) {
+			return NOANGLE;
+		}
 		double average = (angle1 + angle2)/2;
-		assert(angle2 - angle1 != 180);
 		if(Math.abs(angle2 - angle1) > 180) {
 			average -= 180;
 		}
@@ -1165,11 +1373,93 @@ public class Screen extends JPanel{
 		return null;
 	}
 	
-	public int[] calcMiddlePoint(int[] xy1, int[] xy2) {
-		int[] middleXY = new int[2];
-		middleXY[0] = (int)Math.round(((double)xy1[0] + (double)xy2[0])/2);
-		middleXY[1] = (int)Math.round(((double)xy1[1] + (double)xy2[1])/2);
-		return middleXY;
+//	public int[] calcMiddlePoint(int[] xy1, int[] xy2) {
+//		int[] middleXY = new int[2];
+//		middleXY[0] = (int)Math.round(((double)xy1[0] + (double)xy2[0])/2);
+//		middleXY[1] = (int)Math.round(((double)xy1[1] + (double)xy2[1])/2);
+//		return middleXY;
+//	}
+	
+	public boolean findDirection(int[] xyExit, int[] xyEnter, int[] xyReferencePoint, double angle, int referencePointType) {
+		//keep angle within 180 to -180 degrees
+		if(angle > 180) {
+			angle -= 360;
+		} else if(angle < -180) {
+			angle += 360;
+		}
+		
+		if(referencePointType == ONSCREEN) {
+			int[] xyIntercept = calcLine2DWithAngle(xyReferencePoint, angle);
+			
+			//set perimeter distances (distance clockwise around the rectangle from the top left corner)
+			int xyExitPerimeterDistance = xyExit[0] + xyExit[1];
+			if(xyExit[0] == width || xyExit[1] == 0) {
+				//do nothing
+			} else {
+				xyExitPerimeterDistance = width*2 + height*2 - xyExitPerimeterDistance;
+			}
+			
+			int xyEnterPerimeterDistance = xyEnter[0] + xyEnter[1];
+			if(xyEnter[0] == width || xyEnter[1] == 0) {
+				//do nothing
+			} else {
+				xyEnterPerimeterDistance = width*2 + height*2 - xyEnterPerimeterDistance;
+			}
+			
+			int interceptPerimeterDistance = xyIntercept[0] + xyIntercept[1];
+			if(xyIntercept[0] == width || xyIntercept[1] == 0) {
+				//do nothing
+			} else {
+				interceptPerimeterDistance = width*2 + height*2 - interceptPerimeterDistance;
+			}
+			
+			
+			boolean clockwise = true;
+			if(interceptPerimeterDistance < xyEnterPerimeterDistance) {
+				if(interceptPerimeterDistance < xyExitPerimeterDistance) {
+					if(xyExitPerimeterDistance < xyEnterPerimeterDistance) {
+						clockwise = true;
+					} else { //xyExitPerimeterDistance > xyEnterPerimeterDistance
+						clockwise = false;
+					}
+				} else { //interceptPerimeterDistance > xyExitPerimeterDistance
+					clockwise = false;
+				}
+			} else { //interceptPerimeterDistance > xyEnterPerimeterDistance
+				if(interceptPerimeterDistance < xyExitPerimeterDistance) {
+					clockwise = true;
+				} else { //intersectPerimetDistance > xyExitPerimetDistance
+					if(xyExitPerimeterDistance > xyEnterPerimeterDistance) {
+						clockwise = false;
+					} else { //xyExitPerimeterDistance > xyEnterPerimeterDistance
+						clockwise = true;
+					}
+				}
+			}
+			return clockwise;
+		}
+		
+		double primeAngle;
+		if(referencePointType == EXIT) {
+			primeAngle = calcAngle(xyReferencePoint, xyExit);
+		} else { //referencePointType == ENTER
+			primeAngle = calcAngle(xyReferencePoint, xyEnter);
+		}
+		
+		double angleDif = angle - primeAngle; //relative to prime angle
+		
+		boolean direction = false;
+		if((angleDif > 0 && angleDif < 180) || (angleDif < -180 && angleDif > -360)) {
+			direction = CLOCKWISE;
+		} else { //angleDif should be between 0 and -180 or 180 and 360
+			direction = COUNTERCLOCKWISE;
+		}
+		
+		if(referencePointType == ENTER) { //if reference point is type enter, direction relative to exit point will be opposite
+			direction = !direction;
+		}
+		return direction;
 	}
+	
 }
 
